@@ -1,0 +1,6 @@
+.ensime*
+*.swp
+*.class
+*.cache
+target/*
+*/target/*
