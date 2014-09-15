@@ -141,7 +141,12 @@ trait Base {
 
 }
 
-trait BasicOps extends Base
+trait BasicOps extends Base {
+  import HDLBase._
+
+  def infix_+(x: HDL[Boolean], y: HDL[Boolean]) =
+    HDLAdd(x, y)
+}
 
 trait Analyzer extends Base {
   import HDLBase._
@@ -167,6 +172,8 @@ trait Compiler extends Base with Analyzer {
       "\nend\nelse begin\n" + fal.map(compile(_)).mkString(";\n") + "\nend\n"
     case HDLAssign(lhs, rhs) =>
       compile(lhs) + " <= " + compile(rhs) + ";"
+    case HDLAdd(x, y) =>
+      compile(x) + " + " + compile(y)
     case r: HDLReg[T] => r.getName
     case _ => "BlahBlah"
   }

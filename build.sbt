@@ -18,6 +18,7 @@ lazy val examples = project
 
 def common = Seq(
   organization := "com.liyaos",
-  scalaVersion := "2.10.3",
+  scalaVersion := "2.10.2",
+  scalaOrganization := "org.scala-lang.virtualized",
   version := "0.0.1",
   libraryDependencies += "org.scalatest" %% "scalatest" % "1.9.2" % "test")
