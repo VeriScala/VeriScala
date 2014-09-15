@@ -43,6 +43,7 @@ object HDLBase {
       case Some(n) => n
       case None => value.toString
     }
+    def isConst = name == None
     def value = hdlval(_value)
 
     def :=[S >: T](rhs: HDLExp[S]) = {
@@ -59,7 +60,8 @@ object HDLBase {
     override val exps: Seq[HDLExp[Any]])
       extends HDLBlock(exps)
 
-  case class HDLAsyncBlock(override val exps: Seq[HDLExp[Any]])
+  case class HDLAsyncBlock(val senslist: Seq[HDLReg[Any]],
+    override val exps: Seq[HDLExp[Any]])
       extends HDLBlock(exps)
 
   class HDLModule(_name: String,
@@ -113,10 +115,25 @@ trait Base {
 
   def module(blocks: HDLBlock*): HDLModule = macro moduleImpl
 
+  private def getSenslist(exp: HDLExp[Any]): Seq[HDLReg[Any]] = exp match {
+    case HDLWhen(cond, suc, fal) =>
+      getSenslist(cond) ++ getSenslist(suc) ++ getSenslist(fal)
+    case HDLAssign(_, rhs) => getSenslist(rhs)
+    case HDLAdd(x, y) => getSenslist(x) ++ getSenslist(y)
+    case r: HDLReg[Any] => if (!r.isConst) Seq(r) else Seq()
+  }
+
+  private def getSenslist(exps: Seq[HDLExp[Any]]): Seq[HDLReg[Any]] = {
+    (for (exp <- exps) yield getSenslist(exp)).flatten
+  }
+
   def sync(clk: HDLReg[Boolean], when: Int)(exps: HDLExp[Any]*) =
     HDLSyncBlock(clk, when, exps)
 
-  def async(exps: HDLExp[Any]*) = HDLAsyncBlock(exps)
+  def async(exps: HDLExp[Any]*) = {
+    val senslist = getSenslist(exps)
+    HDLAsyncBlock(senslist, exps)
+  }
 
   case class when[T](cond: HDLExp[Boolean])(exps: HDLExp[T]*) {
     def otherwise(otherexps: HDLExp[T]*) = HDLWhen[T](cond, exps, otherexps)
@@ -161,6 +178,9 @@ trait Compiler extends Base with Analyzer {
         "always @(" + (if (when == 1) "posedge " else "negedge ") + reg.getName +
         ") begin\n" + stmts +
         "end\n"
+      case HDLAsyncBlock(senslist, _) =>
+        "always @(" + senslist.map(compile(_)).mkString(", ") +
+        ") begin\n" + stmts + "end\n"
     }
   }
 
