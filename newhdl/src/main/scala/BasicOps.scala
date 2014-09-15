@@ -30,23 +30,36 @@ object HDLBase {
 
   abstract class HDLDef[+T] extends HDLExp[T]
 
-  class HDLReg[+T](value: T) extends HDLDef[T] {
+  class HDLReg[+T](_value: T) extends HDLDef[T] {
+
     var name: Option[String] = None
+    var out: Boolean = false
+    var reg: Boolean = true
+
     def setName(_name: String) {
       name = Some(_name)
     }
     def getName = name match {
       case Some(n) => n
-      case None => hdlval(value).toString
+      case None => value.toString
     }
-    def :=[S >: T](rhs: HDLExp[S]) = HDLAssign(this, rhs)
+    def value = hdlval(_value)
+
+    def :=[S >: T](rhs: HDLExp[S]) = {
+      out = true
+      HDLAssign(this, rhs)
+    }
   }
 
   case class HDLConst[T](unit: T) extends HDLDef[T]
 
   abstract class HDLBlock(val exps: Seq[HDLExp[Any]])
 
-  case class HDLSyncBlock(val when: Int, override val exps: Seq[HDLExp[Any]])
+  case class HDLSyncBlock(val reg: HDLReg[Boolean], val when: Int,
+    override val exps: Seq[HDLExp[Any]])
+      extends HDLBlock(exps)
+
+  case class HDLAsyncBlock(override val exps: Seq[HDLExp[Any]])
       extends HDLBlock(exps)
 
   class HDLModule(_name: String,
@@ -100,7 +113,10 @@ trait Base {
 
   def module(blocks: HDLBlock*): HDLModule = macro moduleImpl
 
-  def sync(when: Int)(exps: HDLExp[Any]*) = HDLSyncBlock(when, exps)
+  def sync(clk: HDLReg[Boolean], when: Int)(exps: HDLExp[Any]*) =
+    HDLSyncBlock(clk, when, exps)
+
+  def async(exps: HDLExp[Any]*) = HDLAsyncBlock(exps)
 
   case class when[T](cond: HDLExp[Boolean])(exps: HDLExp[T]*) {
     def otherwise(otherexps: HDLExp[T]*) = HDLWhen[T](cond, exps, otherexps)
@@ -126,19 +142,39 @@ trait Compiler extends Base with Analyzer {
 
   def compile[T](exp: HDLExp[T]): String = exp match {
     case HDLWhen(cond, suc, fal) =>
-      "if (" + compile(cond) + ") begin\n" + suc.map(compile(_)).mkString(";\n") +
+      val c = cond match {
+        case cr: HDLReg[T] => compile(cr) + " == 1"
+        case _ => compile(cond)
+      }
+      "if (" + c + ") begin\n" + suc.map(compile(_)).mkString(";\n") +
       "\nend\nelse begin\n" + fal.map(compile(_)).mkString(";\n") + "\nend\n"
     case HDLAssign(lhs, rhs) =>
-      compile(lhs) + " <= " + compile(rhs)
+      compile(lhs) + " <= " + compile(rhs) + ";"
     case r: HDLReg[T] => r.getName
     case _ => "BlahBlah"
   }
 
+  def compile(b: HDLBlock): String = {
+    val stmts = (for (exp <- b.exps) yield compile(exp)).mkString("\n")
+    b match {
+      case HDLSyncBlock(reg, when, _) =>
+        "always @(" + (if (when == 1) "posedge " else "negedge ") + reg.getName +
+        ") begin\n" + stmts +
+        "end\n"
+    }
+  }
+
   def compile(m: HDLModule): String = {
+    val paramNames = m.params.map(_.getName)
+    val regs = m.params.filter(_.out).filter(_.reg)
     "module " + m.name + "(\n" +
-    m.params.map(_.getName).mkString(",\n") + "\n);\n\n" +
-    (for (block <- m.blocks)
-    yield (for (exp <- block.exps)
-    yield compile(exp)).mkString("\n")).mkString("\n") + "\nendmodule\n"
+    paramNames.mkString(",\n") + "\n);\n\n" +
+    m.params.map((p) =>
+      (if (p.out) "output " else "input ")
+        + p.getName + ";\n").toList.sorted.mkString("") +
+    regs.map("reg " + _.getName + ";\n").toList.sorted.mkString("") +
+    "\ninitial begin\n" + regs.map((p) =>
+      p.getName + " = " + p.value + ";\n").mkString("") + "end\n\n" +
+    (for (block <- m.blocks) yield compile(block)).mkString("\n") + "\nendmodule\n"
   }
 }
