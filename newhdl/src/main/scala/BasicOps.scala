@@ -134,27 +134,10 @@ trait Base {
   case class when[T](cond: HDLExp[Boolean])(exps: HDLExp[T]*) {
     def otherwise(otherexps: HDLExp[T]*) = HDLWhen[T](cond, exps, otherexps)
   }
-
 }
 
-trait BasicOps extends Base {
-  import HDLBase._
-
-  implicit def hdlbool2hb(x: HDL[Boolean]) = HB(x)
-
-  case class HDLAdd[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
-
-  case class HB(nature: HDL[Boolean]) {
-    def +(another: HB) = HDLAdd(this.nature, another.nature)
-  }
-
-  override protected def getSenslist(exp: HDLExp[Any]): Seq[HDLReg[Any]] =
-    exp match {
-      case HDLAdd(x, y) => getSenslist(x) ++ getSenslist(y)
-      case _ => super.getSenslist(exp)
-    }
+trait BasicOps extends Base { this: Compiler =>
 }
-
 trait Compiler extends Base {
   import HDLBase._
 
@@ -197,15 +180,5 @@ trait Compiler extends Base {
     "\ninitial begin\n" + regs.map((p) =>
       p.getName + " = " + p.value + ";\n").mkString("") + "end\n\n" +
     (for (block <- m.blocks) yield compile(block)).mkString("\n") + "\nendmodule\n"
-  }
-}
-
-trait BasicOpsCompiler extends Compiler { this: BasicOps =>
-  import HDLBase._
-
-  override def compile[T](exp: HDLExp[T]): String = exp match {
-    case HDLAdd(x, y) =>
-      compile(x) + " + " + compile(y)
-    case _ => super.compile(exp)
   }
 }
