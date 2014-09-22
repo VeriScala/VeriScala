@@ -3,12 +3,12 @@ package NewHDL.Core
 trait Arith extends Base { this: ArithCompiler =>
   import HDLBase._
 
-  implicit def hdlbool2hb(x: HDL[Boolean]) = HB(x)
+  implicit def hdlarithable2ha(x: HDL[Arithable]) = _HA(x)
 
   case class HDLAdd[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
 
-  case class HB(nature: HDL[Boolean]) {
-    def +(another: HB) = HDLAdd(this.nature, another.nature)
+  case class _HA(nature: HDL[Arithable]) {
+    def +(another: _HA) = HDLAdd(nature, another.nature)
   }
 
   override protected def getSenslist(exp: HDLExp[Any]): Seq[HDLReg[Any]] =
@@ -26,5 +26,4 @@ trait ArithCompiler extends Compiler { this: Arith =>
       compile(x) + " + " + compile(y)
     case _ => super.compile(exp)
   }
-
 }

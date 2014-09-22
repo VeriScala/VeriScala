@@ -5,8 +5,8 @@ import NewHDL.Core.Arith
 import NewHDL.Core.ArithCompiler
 
 trait Adder { this: Arith with ArithCompiler =>
-  def add(clk: HDL[Boolean], rst: HDL[Boolean],
-  a: HDL[Boolean], b: HDL[Boolean], z: HDL[Boolean]) = module {
+  def add[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
+  a: HDL[T], b: HDL[T], z: HDL[T]) = module {
     async {
       when (rst) {
         z := 0
@@ -19,7 +19,8 @@ trait Adder { this: Arith with ArithCompiler =>
 
 object Main extends Adder with Arith with ArithCompiler {
   def main(args: Array[String]) {
-    println(compile(add(0, 0, 0, 1, 0)))
+    println(compile(add[Unsigned](0, 0,
+      Unsigned(0, 5), Unsigned(1, 5), Unsigned(0, 6))))
   }
 }
 

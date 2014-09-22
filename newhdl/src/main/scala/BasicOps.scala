@@ -6,13 +6,28 @@ import scala.language.experimental.macros
 object HDLBase {
 
   def hdlval(x: Any): Int = x match {
+    case Signed(s, _) => s
+    case Unsigned(u, _) => u
+    case Bool(b) => b
     case b: Boolean => if (b) 1 else 0
     case i: Int => i
   }
 
+  trait Arithable
+  class HDLPrimitive(val length: Int)
+
+  case class Bool(val value: Int)
+      extends HDLPrimitive(1) with Arithable
+  case class Signed(val value: Int, override val length: Int)
+      extends HDLPrimitive(length) with Arithable
+  case class Unsigned(val value: Int, override val length: Int)
+      extends HDLPrimitive(length) with Arithable
+
   implicit def bool2hdlboolreg(x: Boolean) = new HDLReg[Boolean](x)
   implicit def int2hdlboolreg(x: Int) = new HDLReg[Boolean](
     if (x != 0) true else false)
+  implicit def signed2hdlsigned(x: Signed) = new HDLReg[Signed](x)
+  implicit def unsigned2hdlunsigned(x: Unsigned) = new HDLReg[Unsigned](x)
 
   abstract class HDLExp[+T] {
     def is[S >: T](other: HDLExp[S]) = HDLEquals[S](this, other)
@@ -48,6 +63,15 @@ object HDLBase {
       out = true
       HDLAssign(this, rhs)
     }
+
+    def length = _value match {
+      case p: HDLPrimitive => p.length
+      case b: Boolean => 1
+    }
+
+    def lengthString =
+      if (length > 1) "[" + (length - 1) + ":0] "
+      else ""
   }
 
   case class HDLConst[T](unit: T) extends HDLDef[T]
@@ -152,7 +176,6 @@ trait Compiler extends Base {
     case HDLAssign(lhs, rhs) =>
       compile(lhs) + " <= " + compile(rhs) + ";"
     case r: HDLReg[T] => r.getName
-    case _ => "BlahBlah"
   }
 
   def compile(b: HDLBlock): String = {
@@ -175,8 +198,10 @@ trait Compiler extends Base {
     paramNames.mkString(",\n") + "\n);\n\n" +
     m.params.map((p) =>
       (if (p.out) "output " else "input ")
-        + p.getName + ";\n").toList.sorted.mkString("") +
-    regs.map("reg " + _.getName + ";\n").toList.sorted.mkString("") +
+        + p.lengthString + p.getName + ";\n").toList.sorted.mkString("") +
+    regs.map(p => "reg " +
+      p.lengthString +
+      p.getName + ";\n").toList.sorted.mkString("") +
     "\ninitial begin\n" + regs.map((p) =>
       p.getName + " = " + p.value + ";\n").mkString("") + "end\n\n" +
     (for (block <- m.blocks) yield compile(block)).mkString("\n") + "\nendmodule\n"
