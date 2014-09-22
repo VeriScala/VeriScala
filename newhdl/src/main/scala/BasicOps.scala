@@ -18,8 +18,6 @@ object HDLBase {
     def is[S >: T](other: HDLExp[S]) = HDLEquals[S](this, other)
   }
 
-  case class HDLAdd[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
-
   case class HDLAssign[T](lhs: HDLReg[T], rhs: HDLExp[T]) extends HDLExp[T]
 
   case class HDLEquals[T](lhs: HDLExp[T], rhs: HDLExp[T]) extends HDLExp[Boolean]
@@ -104,7 +102,6 @@ object HDLBase {
             nme.CONSTRUCTOR),
             List(Literal(Constant("")), Literal(Constant(null)))))
     }
-
   }
 }
 
@@ -115,11 +112,10 @@ trait Base {
 
   def module(blocks: HDLBlock*): HDLModule = macro moduleImpl
 
-  private def getSenslist(exp: HDLExp[Any]): Seq[HDLReg[Any]] = exp match {
+  protected def getSenslist(exp: HDLExp[Any]): Seq[HDLReg[Any]] = exp match {
     case HDLWhen(cond, suc, fal) =>
       getSenslist(cond) ++ getSenslist(suc) ++ getSenslist(fal)
     case HDLAssign(_, rhs) => getSenslist(rhs)
-    case HDLAdd(x, y) => getSenslist(x) ++ getSenslist(y)
     case r: HDLReg[Any] => if (!r.isConst) Seq(r) else Seq()
   }
 
@@ -144,22 +140,22 @@ trait Base {
 trait BasicOps extends Base {
   import HDLBase._
 
-  def infix_+(x: HDL[Boolean], y: HDL[Boolean]) =
-    HDLAdd(x, y)
-}
+  implicit def hdlbool2hb(x: HDL[Boolean]) = HB(x)
 
-trait Analyzer extends Base {
-  import HDLBase._
+  case class HDLAdd[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
 
-  def analyze(module: HDLModule) {
-    if (!module.analyzed) {
-
-      module.analyzed = true
-    }
+  case class HB(nature: HDL[Boolean]) {
+    def +(another: HB) = HDLAdd(this.nature, another.nature)
   }
+
+  override protected def getSenslist(exp: HDLExp[Any]): Seq[HDLReg[Any]] =
+    exp match {
+      case HDLAdd(x, y) => getSenslist(x) ++ getSenslist(y)
+      case _ => super.getSenslist(exp)
+    }
 }
 
-trait Compiler extends Base with Analyzer {
+trait Compiler extends Base {
   import HDLBase._
 
   def compile[T](exp: HDLExp[T]): String = exp match {
@@ -172,8 +168,6 @@ trait Compiler extends Base with Analyzer {
       "\nend\nelse begin\n" + fal.map(compile(_)).mkString(";\n") + "\nend\n"
     case HDLAssign(lhs, rhs) =>
       compile(lhs) + " <= " + compile(rhs) + ";"
-    case HDLAdd(x, y) =>
-      compile(x) + " + " + compile(y)
     case r: HDLReg[T] => r.getName
     case _ => "BlahBlah"
   }
@@ -203,5 +197,15 @@ trait Compiler extends Base with Analyzer {
     "\ninitial begin\n" + regs.map((p) =>
       p.getName + " = " + p.value + ";\n").mkString("") + "end\n\n" +
     (for (block <- m.blocks) yield compile(block)).mkString("\n") + "\nendmodule\n"
+  }
+}
+
+trait BasicOpsCompiler extends Compiler { this: BasicOps =>
+  import HDLBase._
+
+  override def compile[T](exp: HDLExp[T]): String = exp match {
+    case HDLAdd(x, y) =>
+      compile(x) + " + " + compile(y)
+    case _ => super.compile(exp)
   }
 }

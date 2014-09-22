@@ -2,9 +2,9 @@ package NewHDLExample.Arithmetic.Add
 
 import NewHDL.Core.HDLBase._
 import NewHDL.Core.BasicOps
-import NewHDL.Core.Compiler
+import NewHDL.Core.BasicOpsCompiler
 
-trait Adder { this: BasicOps with Compiler =>
+trait Adder { this: BasicOps with BasicOpsCompiler =>
   def add(clk: HDL[Boolean], rst: HDL[Boolean],
   a: HDL[Boolean], b: HDL[Boolean], z: HDL[Boolean]) = module {
     async {
@@ -17,7 +17,7 @@ trait Adder { this: BasicOps with Compiler =>
   }
 }
 
-object Main extends Adder with BasicOps with Compiler {
+object Main extends Adder with BasicOps with BasicOpsCompiler {
   def main(args: Array[String]) {
     println(compile(add(0, 0, 0, 1, 0)))
   }
