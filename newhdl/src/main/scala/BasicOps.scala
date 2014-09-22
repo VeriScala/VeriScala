@@ -14,14 +14,15 @@ object HDLBase {
   }
 
   trait Arithable
-  class HDLPrimitive(val length: Int)
+  abstract class HDLPrimitive(
+    val length: Int, val signed: Boolean)
 
   case class Bool(val value: Int)
-      extends HDLPrimitive(1) with Arithable
+      extends HDLPrimitive(1, false) with Arithable
   case class Signed(val value: Int, override val length: Int)
-      extends HDLPrimitive(length) with Arithable
+      extends HDLPrimitive(length, true) with Arithable
   case class Unsigned(val value: Int, override val length: Int)
-      extends HDLPrimitive(length) with Arithable
+      extends HDLPrimitive(length, false) with Arithable
 
   implicit def bool2hdlboolreg(x: Boolean) = new HDLReg[Boolean](x)
   implicit def int2hdlboolreg(x: Int) = new HDLReg[Boolean](
@@ -72,6 +73,14 @@ object HDLBase {
     def lengthString =
       if (length > 1) "[" + (length - 1) + ":0] "
       else ""
+
+    def signed = _value match {
+      case p: HDLPrimitive => p.signed
+      case b: Boolean => false
+    }
+
+    def signedString =
+      if (signed) "signed " else ""
   }
 
   case class HDLConst[T](unit: T) extends HDLDef[T]
@@ -165,7 +174,7 @@ trait BasicOps extends Base { this: Compiler =>
 trait Compiler extends Base {
   import HDLBase._
 
-  def compile[T](exp: HDLExp[T]): String = exp match {
+  protected def compile[T](exp: HDLExp[T]): String = exp match {
     case HDLWhen(cond, suc, fal) =>
       val c = cond match {
         case cr: HDLReg[T] => compile(cr) + " == 1"
@@ -178,7 +187,7 @@ trait Compiler extends Base {
     case r: HDLReg[T] => r.getName
   }
 
-  def compile(b: HDLBlock): String = {
+  protected def compile(b: HDLBlock): String = {
     val stmts = (for (exp <- b.exps) yield compile(exp)).mkString("\n")
     b match {
       case HDLSyncBlock(reg, when, _) =>
@@ -191,19 +200,28 @@ trait Compiler extends Base {
     }
   }
 
-  def compile(m: HDLModule): String = {
+  protected def moduleDeclaration(m: HDLModule, content: String): String = {
     val paramNames = m.params.map(_.getName)
+    List("module ", m.name,
+      "(\n", paramNames.mkString(",\n"), "\n);\n\n",
+      content, "\nendmodule\n").mkString("")
+  }
+
+  protected def registerDeclaration(m: HDLModule): String = {
     val regs = m.params.filter(_.out).filter(_.reg)
-    "module " + m.name + "(\n" +
-    paramNames.mkString(",\n") + "\n);\n\n" +
     m.params.map((p) =>
       (if (p.out) "output " else "input ")
-        + p.lengthString + p.getName + ";\n").toList.sorted.mkString("") +
+        + p.signedString + p.lengthString + p.getName +
+        ";\n").toList.sorted.mkString("") +
     regs.map(p => "reg " +
-      p.lengthString +
+      p.signedString + p.lengthString +
       p.getName + ";\n").toList.sorted.mkString("") +
     "\ninitial begin\n" + regs.map((p) =>
-      p.getName + " = " + p.value + ";\n").mkString("") + "end\n\n" +
-    (for (block <- m.blocks) yield compile(block)).mkString("\n") + "\nendmodule\n"
+      p.getName + " = " + p.value + ";\n").mkString("") + "end\n\n"
+  }
+
+  def compile(m: HDLModule): String = {
+    moduleDeclaration(m, registerDeclaration(m) +
+      (for (block <- m.blocks) yield compile(block)).mkString("\n"))
   }
 }

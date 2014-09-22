@@ -19,8 +19,8 @@ trait Adder { this: Arith with ArithCompiler =>
 
 object Main extends Adder with Arith with ArithCompiler {
   def main(args: Array[String]) {
-    println(compile(add[Unsigned](0, 0,
-      Unsigned(0, 5), Unsigned(1, 5), Unsigned(0, 6))))
+    println(compile(add(0, 0,
+      Signed(0, 5), Signed(1, 5), Signed(0, 6))))
   }
 }
 
