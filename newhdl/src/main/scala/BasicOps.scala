@@ -3,6 +3,8 @@ package NewHDL.Core
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
 
+import NewHDL.Exceptions.NotEnoughBitsException
+
 object HDLBase {
 
   def hdlval(x: Any): Int = x match {
@@ -15,14 +17,53 @@ object HDLBase {
 
   trait Arithable
   abstract class HDLPrimitive(
-    val length: Int, val signed: Boolean)
+    val value: Int, val length: Int, val signed: Boolean) {
 
-  case class Bool(val value: Int)
-      extends HDLPrimitive(1, false) with Arithable
-  case class Signed(val value: Int, override val length: Int)
-      extends HDLPrimitive(length, true) with Arithable
-  case class Unsigned(val value: Int, override val length: Int)
-      extends HDLPrimitive(length, false) with Arithable
+    checkValid()
+
+    protected def checkValid() {
+      if (!signed) {
+        if (value < 0)
+          throw new IllegalArgumentException("the value cannot be less than 0")
+        val expected = getUnsignedSize(value)
+        if (expected > length)
+          throw new NotEnoughBitsException(getName, value, expected, length)
+      } else {
+        val expected = getSignedSize(value)
+        if (expected > length)
+          throw new NotEnoughBitsException(getName, value, expected, length)
+      }
+    }
+
+    protected def getUnsignedSize(value: Int): Int = {
+      value.abs.toBinaryString.size
+    }
+
+    protected def getSignedSize(value: Int): Int = {
+      val s = value.toBinaryString
+      if (value == -1) 2
+      else if (value < 0) ("1" + s.dropWhile(_ == '1')).size
+      else if (value == 0) 1
+      else s.size + 1
+    }
+
+    def getName: String
+  }
+
+  case class Bool(override val value: Int)
+      extends HDLPrimitive(value, 1, false) with Arithable {
+    override def getName = "Bool(" + value + ")"
+  }
+
+  case class Signed(override val value: Int, override val length: Int)
+      extends HDLPrimitive(value, length, true) with Arithable {
+    override def getName = "Signed(" + value + ")"
+  }
+
+  case class Unsigned(override val value: Int, override val length: Int)
+      extends HDLPrimitive(value, length, false) with Arithable {
+    override def getName = "Unsigned(" + value + ")"
+  }
 
   implicit def bool2hdlboolreg(x: Boolean) = new HDLReg[Boolean](x)
   implicit def int2hdlboolreg(x: Int) = new HDLReg[Boolean](
