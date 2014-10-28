@@ -192,43 +192,10 @@ object HDLBase {
             List(Literal(Constant("")), Literal(Constant(null)))))
     }
   }
-
-  class compile extends StaticAnnotation {
-    def macroTransform(annottees: Any*) = macro transformImpl
-  }
-
-  def transformImpl(c: Context)(annottees: c.Expr[Any]*):
-      c.Expr[Any] = {
-    import c.universe._
-
-    annottees.map(_.tree) match {
-      case (methodDef: DefDef) :: _ =>
-        val l = methodDef match {
-          case DefDef(_, moduleName, _, _, _, _) =>
-            val m = newTermName(moduleName.decoded)
-            q"this.compileModules = $m :: this.compileModules"
-            /*
-            Apply(Select(Ident(newTermName("compileModules")),
-              newTermName("compileModules_$eq")),
-              Apply(Select(
-                Ident(newTermName(moduleName.decoded)),
-                newTermName("$colon$colon")),
-                List(Ident(newTermName("compileModules")))))
-             */
-        }
-        c.Expr(q"""
-          $methodDef
-          $l
-        """)
-      case _ => c.abort(c.enclosingPosition, "Invalid annottee")
-    }
-  }
 }
 
 abstract class HDLClass { this: Compiler =>
   import HDLBase._
-
-  var compileModules: List[HDLModule] = List()
 }
 
 trait Base {

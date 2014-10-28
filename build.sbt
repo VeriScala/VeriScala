@@ -9,8 +9,7 @@ lazy val lib = project
   .settings(name := "NewHDL",
     scalacOptions += "-language:experimental.macro",
     libraryDependencies ++= Seq(
-      "org.scala-lang" % "scala-reflect" % "2.10.3",
-      "org.bitbucket.inkytonik.dsinfo" %% "dsinfo" % "0.2.0"))
+      "org.scala-lang" % "scala-reflect" % "2.10.3"))
 
 lazy val examples = project
   .in(file("examples"))
@@ -22,6 +21,4 @@ def common = Seq(
   organization := "com.liyaos",
   scalaVersion := "2.10.4",
   version := "0.0.1",
-  libraryDependencies += "org.scalatest" %% "scalatest" % "1.9.2" % "test",
-  libraryDependencies += "org.scalamacros" %% "quasiquotes" % "2.0.1",
-  addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full))
+  libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.1" % "test")
