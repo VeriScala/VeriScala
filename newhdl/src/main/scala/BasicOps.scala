@@ -2,10 +2,13 @@ package NewHDL.Core
 
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
+import scala.annotation.StaticAnnotation
 
 import NewHDL.Exceptions.NotEnoughBitsException
 
 object HDLBase {
+
+  type HDL[T] = HDLReg[T]
 
   def hdlval(x: Any): Int = x match {
     case Signed(s, _) => s
@@ -148,28 +151,40 @@ object HDLBase {
       c.Expr[HDLModule] = {
     import c.universe._
 
+    def constructModule(moduleName: Name, names: List[TermName]) = {
+      // set name for parameters
+      val l = names.map((name) =>
+        Apply(Select(
+          Ident(newTermName(name.toString)), newTermName("setName")),
+          List(Literal(Constant(name.toString)))))
+      val r = Apply(Select(New(Ident(newTypeName("HDLModule"))),
+        nme.CONSTRUCTOR),
+        List(Literal(Constant(moduleName.decoded)),
+          Apply(Select(Ident("List"), newTermName("apply")),
+            names.map(Ident(_)).toList),
+          Apply(Select(Ident("List"), newTermName("apply")),
+            blocks.map(_.tree).toList)))
+      // return above two as a block
+      c.Expr[HDLModule](Block(l, r))
+    }
+
     // replace "enclosingMethod" with "enclosingDef"
     // in the future version of Scala!
     c.enclosingMethod match {
+      case DefDef(_, moduleName, _, List(), _, _) =>
+        c.enclosingClass match {
+          case ClassDef(_, className, _, Template(_, _, params)) =>
+            val names = params.map((param) => param match {
+              case ValDef(_, name, _, _) => Some(name)
+              case _ => None
+            }).flatten(Option.option2Iterable)
+            constructModule(moduleName, names)
+        }
       case DefDef(_, moduleName, _, params, _, _) =>
         val names = params(0).map((param) => param match {
           case ValDef(_, name, _, _) => name
         })
-        // set name for parameters
-        val l = names.map((name) =>
-          Apply(Select(
-            Ident(newTermName(name.toString)), newTermName("setName")),
-            List(Literal(Constant(name.toString)))))
-        // construct the HDLModule
-        val r = Apply(Select(New(Ident(newTypeName("HDLModule"))),
-          nme.CONSTRUCTOR),
-          List(Literal(Constant(moduleName.decoded)),
-            Apply(Select(Ident("List"), newTermName("apply")),
-              names.map(Ident(_)).toList),
-            Apply(Select(Ident("List"), newTermName("apply")),
-              blocks.map(_.tree).toList)))
-        // return above two as a block
-        c.Expr[HDLModule](Block(l, r))
+        constructModule(moduleName, names)
       case _ =>
         c.Expr[HDLModule](
           Apply(Select(New(Ident(newTypeName("HDLModule"))),
@@ -177,12 +192,47 @@ object HDLBase {
             List(Literal(Constant("")), Literal(Constant(null)))))
     }
   }
+
+  class compile extends StaticAnnotation {
+    def macroTransform(annottees: Any*) = macro transformImpl
+  }
+
+  def transformImpl(c: Context)(annottees: c.Expr[Any]*):
+      c.Expr[Any] = {
+    import c.universe._
+
+    annottees.map(_.tree) match {
+      case (methodDef: DefDef) :: _ =>
+        val l = methodDef match {
+          case DefDef(_, moduleName, _, _, _, _) =>
+            val m = newTermName(moduleName.decoded)
+            q"this.compileModules = $m :: this.compileModules"
+            /*
+            Apply(Select(Ident(newTermName("compileModules")),
+              newTermName("compileModules_$eq")),
+              Apply(Select(
+                Ident(newTermName(moduleName.decoded)),
+                newTermName("$colon$colon")),
+                List(Ident(newTermName("compileModules")))))
+             */
+        }
+        c.Expr(q"""
+          $methodDef
+          $l
+        """)
+      case _ => c.abort(c.enclosingPosition, "Invalid annottee")
+    }
+  }
+}
+
+abstract class HDLClass { this: Compiler =>
+  import HDLBase._
+
+  var compileModules: List[HDLModule] = List()
 }
 
 trait Base {
   import HDLBase._
-
-  type HDL[T] = HDLReg[T]
 
   def module(blocks: HDLBlock*): HDLModule = macro moduleImpl
 
