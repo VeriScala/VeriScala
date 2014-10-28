@@ -18,7 +18,10 @@ object HDLBase {
     case i: Int => i
   }
 
+  case class HDLRev[T](a: HDLExp[T]) extends HDLExp[T]
+
   trait Arithable
+
   abstract class HDLPrimitive(
     val value: Int, val length: Int, val signed: Boolean) {
 
@@ -125,6 +128,8 @@ object HDLBase {
 
     def signedString =
       if (signed) "signed " else ""
+
+    def unary_~[S >: T] = HDLRev[S](this)
   }
 
   case class HDLConst[T](unit: T) extends HDLDef[T]
@@ -136,6 +141,10 @@ object HDLBase {
       extends HDLBlock(exps)
 
   case class HDLAsyncBlock(val senslist: Seq[HDLReg[Any]],
+    override val exps: Seq[HDLExp[Any]])
+      extends HDLBlock(exps)
+
+  case class HDLDelayBlock(val duration: Int,
     override val exps: Seq[HDLExp[Any]])
       extends HDLBlock(exps)
 
@@ -175,10 +184,18 @@ object HDLBase {
         c.enclosingClass match {
           case ClassDef(_, className, _, Template(_, _, params)) =>
             val names = params.map((param) => param match {
-              case ValDef(_, name, _, _) => Some(name)
+              case DefDef(_, name, _, params, _, _) =>
+                if (name == termNames.CONSTRUCTOR) Some(params(0).map(
+                  (param) => param match {
+                    case ValDef(_, name, _, _) => name
+                  }))
+                else None
               case _ => None
-            }).flatten(Option.option2Iterable)
-            constructModule(moduleName, names)
+            }).filter(n => n != None)(0)
+            names match {
+              case Some(names) => constructModule(moduleName, names)
+              case None => constructModule(moduleName, List())
+            }
         }
       case DefDef(_, moduleName, _, params, _, _) =>
         val names = params(0).map((param) => param match {
@@ -221,6 +238,9 @@ trait Base {
     val senslist = getSenslist(exps)
     HDLAsyncBlock(senslist, exps)
   }
+
+  def delay(duration: Int)(exps: HDLExp[Any]*) =
+    HDLDelayBlock(duration, exps)
 
   case class when[T](cond: HDLExp[Boolean])(exps: HDLExp[T]*) {
     def otherwise(otherexps: HDLExp[T]*) = HDLWhen[T](cond, exps, otherexps)

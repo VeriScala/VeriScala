@@ -1,12 +1,14 @@
 package NewHDLExample.Arithmetic
 
+import NewHDL.Core.HDLClass
 import NewHDL.Core.HDLBase._
 import NewHDL.Core.Arith
 import NewHDL.Core.ArithCompiler
 
-trait Adder { this: Arith with ArithCompiler =>
-  def add[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
-  a: HDL[T], b: HDL[T], z: HDL[T]) = module {
+class Adder[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
+  a: HDL[T], b: HDL[T], z: HDL[T]) extends HDLClass
+    with Arith with ArithCompiler {
+  def add = module {
     async {
       when (rst) {
         z := 0
@@ -15,12 +17,14 @@ trait Adder { this: Arith with ArithCompiler =>
       }
     }
   }
+
+  def compile: String = compile(add)
 }
 
-object Main extends Adder with Arith with ArithCompiler {
+object Main {
   def main(args: Array[String]) {
-    println(compile(add(0, 0,
-      Signed(0, 5), Signed(1, 5), Signed(0, 6))))
+    println((new Adder(0, 0,
+      Signed(0, 5), Signed(1, 5), Signed(0, 6))).compile)
   }
 }
 
