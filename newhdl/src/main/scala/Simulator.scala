@@ -8,6 +8,12 @@ trait Simulation extends Base {
   import HDLBase._
 
   def simulate(ms: HDLClass) {
-    // Nothing yet
+    new Simulator(ms)
   }
+}
+
+class Simulator(hdl: HDLClass) {
+  for (module <- hdl.toSimulate)
+    for (param <- module.params)
+      println(param.registers)
 }

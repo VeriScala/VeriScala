@@ -18,7 +18,7 @@ class Adder[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
     }
   }
 
-  def compile: String = compile(add)
+  override val toCompile = List(add)
 }
 
 object Main {

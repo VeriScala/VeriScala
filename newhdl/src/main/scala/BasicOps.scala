@@ -20,10 +20,16 @@ object HDLBase {
 
   case class HDLRev[T](a: HDLExp[T]) extends HDLExp[T]
 
+  class Register(val name: String, var value: Int, val length: Int)
+
   trait Arithable
 
+  abstract class HDLType {
+    def toRegisters: List[Register]
+  }
+
   abstract class HDLPrimitive(
-    val value: Int, val length: Int, val signed: Boolean) {
+    val value: Int, val length: Int, val signed: Boolean) extends HDLType {
 
     checkValid()
 
@@ -54,6 +60,8 @@ object HDLBase {
     }
 
     def getName: String
+
+    override def toRegisters = List(new Register(getName, value, length))
   }
 
   case class Bool(override val value: Int)
@@ -100,11 +108,14 @@ object HDLBase {
     def setName(_name: String) {
       name = Some(_name)
     }
+
     def getName = name match {
       case Some(n) => n
       case None => value.toString
     }
+
     def isConst = name == None
+
     def value = hdlval(_value)
 
     def :=[S >: T](rhs: HDLExp[S]) = {
@@ -130,6 +141,23 @@ object HDLBase {
       if (signed) "signed " else ""
 
     def unary_~[S >: T] = HDLRev[S](this)
+
+    // for simulation purpose
+    protected var corresRegs: Option[List[Register]] = None
+
+    def registers: List[Register] =
+      corresRegs match {
+        case Some(theReg) =>
+          theReg
+        case None =>
+          val theReg = _value match {
+            case p: HDLType => p.toRegisters
+            case b: Boolean => List(
+              new Register(getName, if (b) 1 else 0, length))
+          }
+          corresRegs = Some(theReg)
+          theReg
+      }
   }
 
   case class HDLConst[T](unit: T) extends HDLDef[T]
@@ -213,6 +241,13 @@ object HDLBase {
 
 abstract class HDLClass { this: Compiler =>
   import HDLBase._
+
+  val toCompile: List[HDLModule] = List()
+  val toSimulate: List[HDLModule] = List()
+
+  def compile: String =
+    (for (module <- toCompile) yield compile(module)).mkString("")
+
 }
 
 trait Base {

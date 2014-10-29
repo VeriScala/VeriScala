@@ -25,6 +25,8 @@ class AdderTestBench[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
       b := B.next()
     }
   }
+
+  override val toSimulate = List(add, bench)
 }
 
 
