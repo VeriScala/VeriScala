@@ -20,7 +20,9 @@ object HDLBase {
 
   case class HDLRev[T](a: HDLExp[T]) extends HDLExp[T]
 
-  class Register(val name: String, var value: Int, val length: Int)
+  class Register(val name: String, var value: Int, val length: Int) {
+    var next: Int = value
+  }
 
   trait Arithable
 
@@ -239,15 +241,14 @@ object HDLBase {
   }
 }
 
+
 abstract class HDLClass { this: Compiler =>
   import HDLBase._
 
   val toCompile: List[HDLModule] = List()
-  val toSimulate: List[HDLModule] = List()
 
   def compile: String =
     (for (module <- toCompile) yield compile(module)).mkString("")
-
 }
 
 trait Base {
@@ -284,6 +285,7 @@ trait Base {
 
 trait BasicOps extends Base { this: Compiler =>
 }
+
 trait Compiler extends Base {
   import HDLBase._
 

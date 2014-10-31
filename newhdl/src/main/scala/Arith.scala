@@ -1,5 +1,7 @@
 package NewHDL.Core
 
+import NewHDL.Simulation.Core.BasicSimulations
+
 trait Arith extends Base { this: ArithCompiler =>
   import HDLBase._
 
@@ -38,5 +40,20 @@ trait ArithCompiler extends Compiler { this: Arith =>
     case HDLAdd(x, y) =>
       compile(x) + " + " + compile(y)
     case _ => super.compile(exp)
+  }
+}
+
+trait ArithSimulations extends BasicSimulations { this: Arith =>
+  import HDLBase._
+
+  override def exec[T](exp: HDLExp[T]): List[Int] = {
+    exp match {
+      case HDLRev(x) =>
+        List(if (exec(x)(0) > 0) 0 else 1)
+      case HDLAdd(x, y) =>
+        val p = exec(x).zip(exec(y))
+        p.flatMap(tuple => exec(tuple._1 + tuple._2))
+      case _ => super.exec(exp)
+    }
   }
 }
