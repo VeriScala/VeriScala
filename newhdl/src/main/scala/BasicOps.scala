@@ -5,6 +5,7 @@ import scala.language.experimental.macros
 import scala.annotation.StaticAnnotation
 
 import NewHDL.Exceptions.NotEnoughBitsException
+import NewHDL.Simulation.Waiter
 
 object HDLBase {
 
@@ -22,6 +23,35 @@ object HDLBase {
 
   class Register(val name: String, var value: Int, val length: Int) {
     var next: Int = value
+
+    private var eventWaiters: List[Waiter] = List()
+    private var posedgeWaiters: List[Waiter] = List()
+    private var negedgeWaiters: List[Waiter] = List()
+
+    def addWaiter(w: Waiter) {
+      eventWaiters = w :: eventWaiters
+    }
+
+    def addWaiter(w: Waiter, v: Int) {
+      if (v == 1) posedgeWaiters = w :: posedgeWaiters
+      else negedgeWaiters = w :: negedgeWaiters
+    }
+
+    def needUpdate: Boolean =
+      next != value
+
+    def update: List[Waiter] = {
+      if (next != value) {
+        var lst = eventWaiters
+        if (value < next)
+          lst = posedgeWaiters ::: lst
+        else if (value > next)
+          lst = negedgeWaiters ::: lst
+        value = next
+        lst
+      }
+      else List()
+    }
   }
 
   trait Arithable
@@ -39,31 +69,33 @@ object HDLBase {
       if (!signed) {
         if (value < 0)
           throw new IllegalArgumentException("the value cannot be less than 0")
-        val expected = getUnsignedSize(value)
+        val expected = HDLPrimitive.getUnsignedSize(value)
         if (expected > length)
           throw new NotEnoughBitsException(getName, value, expected, length)
       } else {
-        val expected = getSignedSize(value)
+        val expected = HDLPrimitive.getSignedSize(value)
         if (expected > length)
           throw new NotEnoughBitsException(getName, value, expected, length)
       }
     }
 
-    protected def getUnsignedSize(value: Int): Int = {
+    def getName: String
+
+    override def toRegisters = List(new Register(getName, value, length))
+  }
+
+  object HDLPrimitive {
+    def getUnsignedSize(value: Int): Int = {
       value.abs.toBinaryString.size
     }
 
-    protected def getSignedSize(value: Int): Int = {
+    def getSignedSize(value: Int): Int = {
       val s = value.toBinaryString
       if (value == -1) 2
       else if (value < 0) ("1" + s.dropWhile(_ == '1')).size
       else if (value == 0) 1
       else s.size + 1
     }
-
-    def getName: String
-
-    override def toRegisters = List(new Register(getName, value, length))
   }
 
   case class Bool(override val value: Int)
@@ -81,17 +113,19 @@ object HDLBase {
     override def getName = "Unsigned(" + value + ")"
   }
 
-  implicit def bool2hdlboolreg(x: Boolean) = new HDLReg[Boolean](x)
-  implicit def int2hdlboolreg(x: Int) = new HDLReg[Boolean](
+  implicit def bool2hdlboolreg(x: => Boolean) = new HDLReg[Boolean](x)
+  implicit def int2hdlboolreg(x: => Int) = new HDLReg[Boolean](
     if (x != 0) true else false)
-  implicit def signed2hdlsigned(x: Signed) = new HDLReg[Signed](x)
-  implicit def unsigned2hdlunsigned(x: Unsigned) = new HDLReg[Unsigned](x)
+  implicit def signed2hdlsigned(x: => Signed) = new HDLReg[Signed](x)
+  implicit def unsigned2hdlunsigned(x: => Unsigned) = new HDLReg[Unsigned](x)
+  implicit def any2hdl[T](x: => T) = new HDLReg[T](x)
 
   abstract class HDLExp[+T] {
     def is[S >: T](other: HDLExp[S]) = HDLEquals[S](this, other)
   }
 
-  case class HDLAssign[T](lhs: HDLReg[T], rhs: HDLExp[T]) extends HDLExp[T]
+  case class HDLAssign[T](lhs: HDLReg[T], rhs: HDLExp[T])
+      extends HDLExp[T]
 
   case class HDLEquals[T](lhs: HDLExp[T], rhs: HDLExp[T]) extends HDLExp[Boolean]
 
@@ -101,7 +135,7 @@ object HDLBase {
 
   abstract class HDLDef[+T] extends HDLExp[T]
 
-  class HDLReg[+T](_value: T) extends HDLDef[T] {
+  class HDLReg[+T](_value: => T) extends HDLDef[T] {
 
     var name: Option[String] = None
     var out: Boolean = false
@@ -152,13 +186,24 @@ object HDLBase {
         case Some(theReg) =>
           theReg
         case None =>
-          val theReg = _value match {
-            case p: HDLType => p.toRegisters
-            case b: Boolean => List(
-              new Register(getName, if (b) 1 else 0, length))
+          val v = _value
+          name match {
+            case None =>
+              val theReg = v match {
+                case p: HDLType => p.toRegisters
+                case b: Boolean => List(
+                  new Register(getName, if (b) 1 else 0, length))
+              }
+              theReg
+            case Some(n) =>
+              val theReg = v match {
+                case p: HDLType => p.toRegisters
+                case b: Boolean => List(
+                  new Register(getName, if (b) 1 else 0, length))
+              }
+              corresRegs = Some(theReg)
+              theReg
           }
-          corresRegs = Some(theReg)
-          theReg
       }
   }
 
@@ -211,21 +256,23 @@ object HDLBase {
     // in the future version of Scala!
     c.enclosingMethod match {
       case DefDef(_, moduleName, _, List(), _, _) =>
+        var names: List[TermName] = List()
         c.enclosingClass match {
           case ClassDef(_, className, _, Template(_, _, params)) =>
-            val names = params.map((param) => param match {
+            params.map((param) => param match {
               case DefDef(_, name, _, params, _, _) =>
-                if (name == termNames.CONSTRUCTOR) Some(params(0).map(
-                  (param) => param match {
-                    case ValDef(_, name, _, _) => name
-                  }))
-                else None
-              case _ => None
-            }).filter(n => n != None)(0)
-            names match {
-              case Some(names) => constructModule(moduleName, names)
-              case None => constructModule(moduleName, List())
-            }
+                if (name == termNames.CONSTRUCTOR)
+                  params(0).map(
+                    (param) => param match {
+                      case ValDef(_, name,
+                        AppliedTypeTree(Ident(typeName), _), _) =>
+                        if (typeName == newTypeName("HDL"))
+                          names = name :: names
+                      case _ => ()
+                    })
+              case _ => ()
+            })
+            constructModule(moduleName, names)
         }
       case DefDef(_, moduleName, _, params, _, _) =>
         val names = params(0).map((param) => param match {

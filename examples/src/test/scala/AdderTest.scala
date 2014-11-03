@@ -8,32 +8,34 @@ import NewHDL.Core.ArithCompiler
 import NewHDL.Core.ArithSimulations
 
 class AdderTestBench[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
-  a: HDL[T], b: HDL[T], z: HDL[T])
+  a: HDL[T], b: HDL[T], z: HDL[T], A: Iterator[T], B: Iterator[T])
     extends Adder[T](clk, rst, a, b, z)
     with Arith with ArithCompiler with ArithSimulations {
-
-  val A = List(0, 0, 1, 1, 15, 0, 15).iterator
-  val B = List(0, 1, 0, 1, 0, 15, 15).iterator
 
   def bench = module (
     delay(1) {
       clk := ~clk
     },
 
-    sync(clk, 0) {
-      rst := 0
-      a := A.next()
+    sync(clk, 0) (
+      rst := 0,
+      a := A.next(),
       b := B.next()
-    }
-  )
+    ))
 
   override val toSimulate = List(add, bench)
 }
 
 
 class AdderTest extends FunSuite {
+
+  val A = List(0, 0, 1, 1, 15, 0, 15).map(Unsigned(_, 4)).iterator
+  val B = List(0, 1, 0, 1, 0, 15, 15).map(Unsigned(_, 4)).iterator
+
   test("test adder") {
-    new AdderTestBench(0, 0,
-      Unsigned(0, 4), Unsigned(0, 4), Unsigned(0, 5)).simulate
+    val bench = new AdderTestBench(0, 0,
+      Unsigned(0, 4), Unsigned(0, 4), Unsigned(0, 5), A, B)
+    bench.startSimulate
+    bench.doSimulation(5)
   }
 }
