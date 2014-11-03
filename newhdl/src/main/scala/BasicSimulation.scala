@@ -7,6 +7,7 @@ import NewHDL.Simulation.Waiter
 import NewHDL.Simulation.SyncWaiter
 import NewHDL.Simulation.AsyncWaiter
 import NewHDL.Simulation.DelayWaiter
+import NewHDL.Simulation.Exceptions.SimulatorException
 
 import scala.collection.mutable.PriorityQueue
 
@@ -22,9 +23,13 @@ trait SimulationBase {
   protected var currentTime = 0
   protected var nextTime = 0
   protected var waiters: List[Waiter] = List()
+  protected var isStarted: Boolean = false
 
-  def startSimulate {
+  protected def startSimulate {
     waiters = List()
+    isStarted = true
+    currentTime = 0
+    nextTime = 0
     toSimulate.map(startSimulate(_))
   }
 
@@ -56,7 +61,7 @@ trait SimulationBase {
     }
   }
 
-  def doSimulation(maxTime: Int): Int = {
+  protected def doSimulation(maxTime: Int): Int = {
     if (maxTime == 0) return currentTime
     while (true) {
       for (reg <- regs) {
@@ -89,6 +94,28 @@ trait SimulationBase {
       }
     }
     currentTime
+  }
+
+  def simulate(maxTime: Int) {
+    if (isStarted)
+      throw SimulatorException("Simulator is already running!")
+    startSimulate
+    doSimulation(maxTime)
+  }
+
+  def continue(maxTime: Int) {
+    if (!isStarted)
+      throw SimulatorException("Simulator has not been started!")
+    doSimulation(maxTime)
+  }
+
+  def stop {
+    if (!isStarted)
+      throw SimulatorException("Simulator has not been started!")
+    isStarted = false
+    currentTime = 0
+    nextTime = 0
+    waiters = List()
   }
 }
 

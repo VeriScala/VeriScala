@@ -35,7 +35,8 @@ class AdderTest extends FunSuite {
   test("test adder") {
     val bench = new AdderTestBench(0, 0,
       Unsigned(0, 4), Unsigned(0, 4), Unsigned(0, 5), A, B)
-    bench.startSimulate
-    bench.doSimulation(5)
+    bench.simulate(5)
+    bench.continue(10)
+    bench.stop
   }
 }
