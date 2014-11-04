@@ -1,12 +1,11 @@
 package NewHDLExamples.FlipFlop
 
 import NewHDL.Core.HDLBase._
-import NewHDL.Core.BasicOps
-import NewHDL.Core.Compiler
+import NewHDL.Core.HDLClass
 
-trait FF { this: BasicOps with Compiler =>
-  def ff(clk: HDL[Boolean], rst: HDL[Boolean],
-    q: HDL[Boolean], d: HDL[Boolean]) = module {
+class FF(clk: HDL[Boolean], rst: HDL[Boolean],
+  q: HDL[Boolean], d: HDL[Boolean]) extends HDLClass {
+  def ff = module {
     sync(clk, 1) {
       when (rst) {
         q := 0
@@ -15,11 +14,13 @@ trait FF { this: BasicOps with Compiler =>
       }
     }
   }
+
+  override val toCompile = List(ff)
 }
 
-object Main extends FF with BasicOps with Compiler {
+object Main {
   def main(args: Array[String]) {
-    println(compile(ff(0, 0, 0, 0)))
+    println(new FF(0, 0, 0, 0).compile)
   }
 }
 
