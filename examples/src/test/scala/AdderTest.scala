@@ -6,11 +6,12 @@ import NewHDL.Core.HDLBase._
 import NewHDL.Core.Arith
 import NewHDL.Core.ArithCompiler
 import NewHDL.Core.ArithSimulations
+import NewHDL.Simulation.Core.SimulationSchedule
 
 class AdderTestBench[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
   a: HDL[T], b: HDL[T], z: HDL[T], A: Iterator[T], B: Iterator[T])
     extends Adder[T](clk, rst, a, b, z)
-    with Arith with ArithCompiler with ArithSimulations {
+    with Arith with ArithCompiler with ArithSimulations with SimulationSchedule {
 
   def bench = module (
     delay(1) {
@@ -24,18 +25,27 @@ class AdderTestBench[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
     ))
 
   override val toSimulate = List(add, bench)
+  override val traceFileName = "adder.vcd"
 }
-
 
 class AdderTest extends FunSuite {
 
   val A = List(0, 0, 1, 1, 15, 0, 15).map(Unsigned(_, 4)).iterator
   val B = List(0, 1, 0, 1, 0, 15, 15).map(Unsigned(_, 4)).iterator
+  val Z = List(0, 1, 1, 2, 15, 15, 30).iterator
 
   test("test adder") {
-    val bench = new AdderTestBench(0, 0,
-      Unsigned(0, 4), Unsigned(0, 4), Unsigned(0, 5), A, B)
-    bench.startSimulate
-    bench.doSimulation(5)
+    val clk = HDL(false)
+    val z = HDL(Unsigned(0, 5))
+    val bench = new AdderTestBench(clk, 0,
+      Unsigned(0, 4), Unsigned(0, 4), z, A, B)
+    bench since 0 until 10 every 2 run {
+      assert(clk === 0)
+    }
+    bench since 1 until 10 every 2 run {
+      assert(clk === 1)
+      assert(z === Z.next)
+    }
+    bench test
   }
 }

@@ -9,7 +9,7 @@ class Adder[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
   a: HDL[T], b: HDL[T], z: HDL[T]) extends HDLClass
     with Arith with ArithCompiler {
   def add = module {
-    async {
+    sync(clk, 1) {
       when (rst) {
         z := 0
       } .otherwise {
