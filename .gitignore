@@ -4,3 +4,4 @@
 *.cache
 target/*
 */target/*
+*.vcd
