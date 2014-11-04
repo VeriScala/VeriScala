@@ -2,10 +2,15 @@ package NewHDL.Core
 
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
+import scala.annotation.StaticAnnotation
 
 import NewHDL.Exceptions.NotEnoughBitsException
+import NewHDL.Simulation.Waiter
 
 object HDLBase {
+
+  type HDL[T] = HDLReg[T]
+  def HDL[T](x: T) = new HDLReg[T](x)
 
   def hdlval(x: Any): Int = x match {
     case Signed(s, _) => s
@@ -15,9 +20,53 @@ object HDLBase {
     case i: Int => i
   }
 
+  case class HDLRev[T](a: HDLExp[T]) extends HDLExp[T]
+
+  class Register(val name: String, var value: Int, val length: Int) {
+    var next: Int = value
+
+    private var eventWaiters: List[Waiter] = List()
+    private var posedgeWaiters: List[Waiter] = List()
+    private var negedgeWaiters: List[Waiter] = List()
+
+    def addWaiter(w: Waiter) {
+      eventWaiters = w :: eventWaiters
+    }
+
+    def addWaiter(w: Waiter, v: Int) {
+      if (v == 1) posedgeWaiters = w :: posedgeWaiters
+      else negedgeWaiters = w :: negedgeWaiters
+    }
+
+    def needUpdate: Boolean =
+      next != value
+
+    def update: List[Waiter] = {
+      if (next != value) {
+        var lst = eventWaiters
+        if (value < next)
+          lst = posedgeWaiters ::: lst
+        else if (value > next)
+          lst = negedgeWaiters ::: lst
+        value = next
+        lst
+      }
+      else List()
+    }
+
+    override def toString =
+      name + "(" + value + ", " + length + ")"
+  }
+
   trait Arithable
+
+  abstract class HDLType {
+    def toRegisters: List[Register]
+    def toRegisters(name: String): List[Register]
+  }
+
   abstract class HDLPrimitive(
-    val value: Int, val length: Int, val signed: Boolean) {
+    val value: Int, val length: Int, val signed: Boolean) extends HDLType {
 
     checkValid()
 
@@ -25,29 +74,35 @@ object HDLBase {
       if (!signed) {
         if (value < 0)
           throw new IllegalArgumentException("the value cannot be less than 0")
-        val expected = getUnsignedSize(value)
+        val expected = HDLPrimitive.getUnsignedSize(value)
         if (expected > length)
           throw new NotEnoughBitsException(getName, value, expected, length)
       } else {
-        val expected = getSignedSize(value)
+        val expected = HDLPrimitive.getSignedSize(value)
         if (expected > length)
           throw new NotEnoughBitsException(getName, value, expected, length)
       }
     }
 
-    protected def getUnsignedSize(value: Int): Int = {
+    def getName: String
+
+    override def toRegisters = List(new Register(getName, value, length))
+    override def toRegisters(name: String) = List(
+      new Register(name, value, length))
+  }
+
+  object HDLPrimitive {
+    def getUnsignedSize(value: Int): Int = {
       value.abs.toBinaryString.size
     }
 
-    protected def getSignedSize(value: Int): Int = {
+    def getSignedSize(value: Int): Int = {
       val s = value.toBinaryString
       if (value == -1) 2
       else if (value < 0) ("1" + s.dropWhile(_ == '1')).size
       else if (value == 0) 1
       else s.size + 1
     }
-
-    def getName: String
   }
 
   case class Bool(override val value: Int)
@@ -65,17 +120,19 @@ object HDLBase {
     override def getName = "Unsigned(" + value + ")"
   }
 
-  implicit def bool2hdlboolreg(x: Boolean) = new HDLReg[Boolean](x)
-  implicit def int2hdlboolreg(x: Int) = new HDLReg[Boolean](
+  implicit def bool2hdlboolreg(x: => Boolean) = new HDLReg[Boolean](x)
+  implicit def int2hdlboolreg(x: => Int) = new HDLReg[Boolean](
     if (x != 0) true else false)
-  implicit def signed2hdlsigned(x: Signed) = new HDLReg[Signed](x)
-  implicit def unsigned2hdlunsigned(x: Unsigned) = new HDLReg[Unsigned](x)
+  implicit def signed2hdlsigned(x: => Signed) = new HDLReg[Signed](x)
+  implicit def unsigned2hdlunsigned(x: => Unsigned) = new HDLReg[Unsigned](x)
+  implicit def any2hdl[T](x: => T) = new HDLReg[T](x)
 
   abstract class HDLExp[+T] {
     def is[S >: T](other: HDLExp[S]) = HDLEquals[S](this, other)
   }
 
-  case class HDLAssign[T](lhs: HDLReg[T], rhs: HDLExp[T]) extends HDLExp[T]
+  case class HDLAssign[T](lhs: HDLReg[T], rhs: HDLExp[T])
+      extends HDLExp[T]
 
   case class HDLEquals[T](lhs: HDLExp[T], rhs: HDLExp[T]) extends HDLExp[Boolean]
 
@@ -85,7 +142,7 @@ object HDLBase {
 
   abstract class HDLDef[+T] extends HDLExp[T]
 
-  class HDLReg[+T](_value: T) extends HDLDef[T] {
+  class HDLReg[+T](_value: => T) extends HDLDef[T] {
 
     var name: Option[String] = None
     var out: Boolean = false
@@ -94,11 +151,14 @@ object HDLBase {
     def setName(_name: String) {
       name = Some(_name)
     }
+
     def getName = name match {
       case Some(n) => n
       case None => value.toString
     }
+
     def isConst = name == None
+
     def value = hdlval(_value)
 
     def :=[S >: T](rhs: HDLExp[S]) = {
@@ -122,6 +182,43 @@ object HDLBase {
 
     def signedString =
       if (signed) "signed " else ""
+
+    def unary_~[S >: T] = HDLRev[S](this)
+
+    override def toString = getName
+
+    // for simulation purpose
+    protected var corresRegs: Option[List[Register]] = None
+
+    def registers: List[Register] =
+      corresRegs match {
+        case Some(theReg) =>
+          theReg
+        case None =>
+          val v = _value
+          name match {
+            case None =>
+              val theReg = v match {
+                case p: HDLType => p.toRegisters
+                case b: Boolean => List(
+                  new Register(getName, if (b) 1 else 0, length))
+              }
+              theReg
+            case Some(nm) =>
+              val theReg = v match {
+                case p: HDLType => p.toRegisters(nm)
+                case b: Boolean => List(
+                  new Register(getName, if (b) 1 else 0, length))
+              }
+              corresRegs = Some(theReg)
+              theReg
+          }
+      }
+
+    override def equals(other: Any): Boolean = other match {
+      case num: Int =>
+        registers.size == 1 && registers(0).value == num
+    }
   }
 
   case class HDLConst[T](unit: T) extends HDLDef[T]
@@ -133,6 +230,10 @@ object HDLBase {
       extends HDLBlock(exps)
 
   case class HDLAsyncBlock(val senslist: Seq[HDLReg[Any]],
+    override val exps: Seq[HDLExp[Any]])
+      extends HDLBlock(exps)
+
+  case class HDLDelayBlock(val duration: Int,
     override val exps: Seq[HDLExp[Any]])
       extends HDLBlock(exps)
 
@@ -148,28 +249,50 @@ object HDLBase {
       c.Expr[HDLModule] = {
     import c.universe._
 
+    def constructModule(moduleName: Name, names: List[TermName]) = {
+      // set name for parameters
+      val l = names.map((name) =>
+        Apply(Select(
+          Ident(newTermName(name.toString)), newTermName("setName")),
+          List(Literal(Constant(name.toString)))))
+      val r = Apply(Select(New(Ident(newTypeName("HDLModule"))),
+        nme.CONSTRUCTOR),
+        List(Literal(Constant(moduleName.decoded)),
+          Apply(Select(Ident("List"), newTermName("apply")),
+            names.map(Ident(_)).toList),
+          Apply(Select(Ident("List"), newTermName("apply")),
+            blocks.map(_.tree).toList)))
+      // return above two as a block
+      c.Expr[HDLModule](Block(l, r))
+    }
+
     // replace "enclosingMethod" with "enclosingDef"
     // in the future version of Scala!
     c.enclosingMethod match {
+      case DefDef(_, moduleName, _, List(), _, _) =>
+        var names: List[TermName] = List()
+        c.enclosingClass match {
+          case ClassDef(_, className, _, Template(_, _, params)) =>
+            params.map((param) => param match {
+              case DefDef(_, name, _, params, _, _) =>
+                if (name == termNames.CONSTRUCTOR)
+                  params(0).map(
+                    (param) => param match {
+                      case ValDef(_, name,
+                        AppliedTypeTree(Ident(typeName), _), _) =>
+                        if (typeName == newTypeName("HDL"))
+                          names = name :: names
+                      case _ => ()
+                    })
+              case _ => ()
+            })
+            constructModule(moduleName, names)
+        }
       case DefDef(_, moduleName, _, params, _, _) =>
         val names = params(0).map((param) => param match {
           case ValDef(_, name, _, _) => name
         })
-        // set name for parameters
-        val l = names.map((name) =>
-          Apply(Select(
-            Ident(newTermName(name.toString)), newTermName("setName")),
-            List(Literal(Constant(name.toString)))))
-        // construct the HDLModule
-        val r = Apply(Select(New(Ident(newTypeName("HDLModule"))),
-          nme.CONSTRUCTOR),
-          List(Literal(Constant(moduleName.decoded)),
-            Apply(Select(Ident("List"), newTermName("apply")),
-              names.map(Ident(_)).toList),
-            Apply(Select(Ident("List"), newTermName("apply")),
-              blocks.map(_.tree).toList)))
-        // return above two as a block
-        c.Expr[HDLModule](Block(l, r))
+        constructModule(moduleName, names)
       case _ =>
         c.Expr[HDLModule](
           Apply(Select(New(Ident(newTypeName("HDLModule"))),
@@ -179,10 +302,18 @@ object HDLBase {
   }
 }
 
-trait Base {
+
+abstract class HDLClass { this: Compiler =>
   import HDLBase._
 
-  type HDL[T] = HDLReg[T]
+  val toCompile: List[HDLModule] = List()
+
+  def compile: String =
+    (for (module <- toCompile) yield compile(module)).mkString("")
+}
+
+trait Base {
+  import HDLBase._
 
   def module(blocks: HDLBlock*): HDLModule = macro moduleImpl
 
@@ -205,6 +336,9 @@ trait Base {
     HDLAsyncBlock(senslist, exps)
   }
 
+  def delay(duration: Int)(exps: HDLExp[Any]*) =
+    HDLDelayBlock(duration, exps)
+
   case class when[T](cond: HDLExp[Boolean])(exps: HDLExp[T]*) {
     def otherwise(otherexps: HDLExp[T]*) = HDLWhen[T](cond, exps, otherexps)
   }
@@ -212,6 +346,7 @@ trait Base {
 
 trait BasicOps extends Base { this: Compiler =>
 }
+
 trait Compiler extends Base {
   import HDLBase._
 
