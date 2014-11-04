@@ -311,14 +311,9 @@ object HDLBase {
 }
 
 
-abstract class HDLClass { this: Compiler =>
-  import HDLBase._
+abstract class HDLBaseClass
 
-  val toCompile: List[HDLModule] = List()
-
-  def compile: String =
-    (for (module <- toCompile) yield compile(module)).mkString("")
-}
+abstract class HDLClass extends HDLBaseClass with BasicOps with Compiler
 
 trait Base {
   import HDLBase._
@@ -373,6 +368,11 @@ trait BasicOps extends Base {
 
 trait Compiler extends Base {
   import HDLBase._
+
+  val toCompile: List[HDLModule] = List()
+
+  def compile: String =
+    (for (module <- toCompile) yield compile(module)).mkString("")
 
   protected def compile[T](exp: HDLExp[T]): String = exp match {
     case HDLWhen(cond, suc, fal) =>
