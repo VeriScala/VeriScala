@@ -60,6 +60,14 @@ object HDLBase {
 
   trait Arithable
 
+  case class HDLAdd[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
+
+  case class HDLSub[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
+
+  case class HDLMul[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
+
+  case class HDLDiv[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
+
   abstract class HDLType {
     def toRegisters: List[Register]
     def toRegisters(name: String): List[Register]
@@ -315,6 +323,17 @@ abstract class HDLClass { this: Compiler =>
 trait Base {
   import HDLBase._
 
+  // Arithmetic related.
+
+  implicit def hdlarithable2ha(x: HDL[Arithable]) = _HA(x)
+
+  case class _HA(nature: HDL[Arithable]) {
+    def +(another: _HA) = HDLAdd(nature, another.nature)
+    def -(another: _HA) = HDLSub(nature, another.nature)
+    def *(another: _HA) = HDLMul(nature, another.nature)
+    def /(another: _HA) = HDLDiv(nature, another.nature)
+  }
+
   def module(blocks: HDLBlock*): HDLModule = macro moduleImpl
 
   protected def getSenslist(exp: HDLExp[Any]): Seq[HDLReg[Any]] = exp match {
@@ -322,6 +341,11 @@ trait Base {
       getSenslist(cond) ++ getSenslist(suc) ++ getSenslist(fal)
     case HDLAssign(_, rhs) => getSenslist(rhs)
     case r: HDLReg[Any] => if (!r.isConst) Seq(r) else Seq()
+    case HDLRev(x) => getSenslist(x)
+    case HDLAdd(x, y) => getSenslist(x) ++ getSenslist(y)
+    case HDLSub(x, y) => getSenslist(x) ++ getSenslist(y)
+    case HDLMul(x, y) => getSenslist(x) ++ getSenslist(y)
+    case HDLDiv(x, y) => getSenslist(x) ++ getSenslist(y)
   }
 
   private def getSenslist(exps: Seq[HDLExp[Any]]): Seq[HDLReg[Any]] = {
@@ -344,7 +368,7 @@ trait Base {
   }
 }
 
-trait BasicOps extends Base { this: Compiler =>
+trait BasicOps extends Base {
 }
 
 trait Compiler extends Base {
@@ -360,6 +384,8 @@ trait Compiler extends Base {
       "\nend\nelse begin\n" + fal.map(compile(_)).mkString(";\n") + "\nend\n"
     case HDLAssign(lhs, rhs) =>
       compile(lhs) + " <= " + compile(rhs) + ";"
+    case HDLAdd(x, y) =>
+      compile(x) + " + " + compile(y)
     case r: HDLReg[T] => r.getName
   }
 

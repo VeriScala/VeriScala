@@ -3,15 +3,11 @@ import org.scalatest.FunSuite
 import NewHDLExample.Arithmetic.Adder
 
 import NewHDL.Core.HDLBase._
-import NewHDL.Core.Arith
-import NewHDL.Core.ArithCompiler
-import NewHDL.Core.ArithSimulations
-import NewHDL.Simulation.Core.SimulationSchedule
+import NewHDL.Simulation.Core.SimulationSuite
 
 class AdderTestBench[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
   a: HDL[T], b: HDL[T], z: HDL[T], A: Iterator[T], B: Iterator[T])
-    extends Adder[T](clk, rst, a, b, z)
-    with Arith with ArithCompiler with ArithSimulations with SimulationSchedule {
+    extends Adder[T](clk, rst, a, b, z) with SimulationSuite {
 
   def bench = module (
     delay(1) {
