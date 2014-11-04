@@ -3,18 +3,9 @@ lazy val newhdl = project
   .aggregate(lib, examples)
   .settings(common: _*)
 
-lazy val lib = project
-  .in(file("newhdl"))
-  .settings(common: _*)
-  .settings(name := "NewHDL",
-    libraryDependencies ++= Seq(
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value))
+lazy val lib = ProjectRef(file("newhdl"), "lib")
 
-lazy val examples = project
-  .in(file("examples"))
-  .dependsOn(lib)
-  .settings(common: _*)
-  .settings(name := "NewHDL Examples")
+lazy val examples = ProjectRef(file("examples"), "examples")
 
 def common = Seq(
   organization := "com.liyaos",

@@ -3,10 +3,6 @@ package NewHDL.Simulation.Core
 import NewHDL.Core.HDLClass
 import NewHDL.Core.Base
 import NewHDL.Core.HDLBase._
-import NewHDL.Simulation.Waiter
-import NewHDL.Simulation.SyncWaiter
-import NewHDL.Simulation.AsyncWaiter
-import NewHDL.Simulation.DelayWaiter
 import NewHDL.Simulation.Exceptions.SimulatorException
 
 import java.io.File

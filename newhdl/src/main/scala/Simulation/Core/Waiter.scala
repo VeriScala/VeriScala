@@ -1,4 +1,4 @@
-package NewHDL.Simulation
+package NewHDL.Simulation.Core
 
 import NewHDL.Core.HDLClass
 import NewHDL.Core.Base
