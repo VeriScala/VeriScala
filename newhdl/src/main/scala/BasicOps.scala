@@ -10,6 +10,7 @@ import NewHDL.Simulation.Waiter
 object HDLBase {
 
   type HDL[T] = HDLReg[T]
+  def HDL[T](x: T) = new HDLReg[T](x)
 
   def hdlval(x: Any): Int = x match {
     case Signed(s, _) => s
@@ -52,12 +53,16 @@ object HDLBase {
       }
       else List()
     }
+
+    override def toString =
+      name + "(" + value + ", " + length + ")"
   }
 
   trait Arithable
 
   abstract class HDLType {
     def toRegisters: List[Register]
+    def toRegisters(name: String): List[Register]
   }
 
   abstract class HDLPrimitive(
@@ -82,6 +87,8 @@ object HDLBase {
     def getName: String
 
     override def toRegisters = List(new Register(getName, value, length))
+    override def toRegisters(name: String) = List(
+      new Register(name, value, length))
   }
 
   object HDLPrimitive {
@@ -178,6 +185,8 @@ object HDLBase {
 
     def unary_~[S >: T] = HDLRev[S](this)
 
+    override def toString = getName
+
     // for simulation purpose
     protected var corresRegs: Option[List[Register]] = None
 
@@ -195,9 +204,9 @@ object HDLBase {
                   new Register(getName, if (b) 1 else 0, length))
               }
               theReg
-            case Some(n) =>
+            case Some(nm) =>
               val theReg = v match {
-                case p: HDLType => p.toRegisters
+                case p: HDLType => p.toRegisters(nm)
                 case b: Boolean => List(
                   new Register(getName, if (b) 1 else 0, length))
               }
@@ -205,6 +214,11 @@ object HDLBase {
               theReg
           }
       }
+
+    override def equals(other: Any): Boolean = other match {
+      case num: Int =>
+        registers.size == 1 && registers(0).value == num
+    }
   }
 
   case class HDLConst[T](unit: T) extends HDLDef[T]

@@ -52,7 +52,8 @@ trait ArithSimulations extends BasicSimulations { this: Arith =>
         List(if (exec(x)(0) > 0) 0 else 1)
       case HDLAdd(x, y) =>
         val p = exec(x).zip(exec(y))
-        p.flatMap(tuple => exec(tuple._1 + tuple._2))
+        val r = p.map(tuple => tuple._1 + tuple._2)
+        r
       case _ => super.exec(exp)
     }
   }
