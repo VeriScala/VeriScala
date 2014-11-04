@@ -223,6 +223,12 @@ trait BasicSimulations extends SimulationBase {
           kv._1.next = kv._2
         }
         res
+      case HDLRev(x) =>
+        List(if (exec(x)(0) > 0) 0 else 1)
+      case HDLAdd(x, y) =>
+        val p = exec(x).zip(exec(y))
+        val r = p.map(tuple => tuple._1 + tuple._2)
+        r
       case r: HDLReg[T] =>
         r.registers.map(_.value).toList
     }
@@ -267,3 +273,5 @@ trait SimulationSchedule { this: SimulationBase =>
     stop
   }
 }
+
+trait SimulationSuite extends BasicSimulations with SimulationSchedule

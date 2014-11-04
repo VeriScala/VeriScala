@@ -2,12 +2,9 @@ package NewHDLExample.Arithmetic
 
 import NewHDL.Core.HDLClass
 import NewHDL.Core.HDLBase._
-import NewHDL.Core.Arith
-import NewHDL.Core.ArithCompiler
 
 class Adder[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
-  a: HDL[T], b: HDL[T], z: HDL[T]) extends HDLClass
-    with Arith with ArithCompiler {
+  a: HDL[T], b: HDL[T], z: HDL[T]) extends HDLClass {
   def add = module {
     sync(clk, 1) {
       when (rst) {
