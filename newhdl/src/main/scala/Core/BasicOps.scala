@@ -5,7 +5,7 @@ import scala.language.experimental.macros
 import scala.annotation.StaticAnnotation
 
 import NewHDL.Exceptions.NotEnoughBitsException
-import NewHDL.Simulation.Waiter
+import NewHDL.Simulation.Core.Waiter
 
 object HDLBase {
 
