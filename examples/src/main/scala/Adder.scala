@@ -1,4 +1,4 @@
-package NewHDLExample.Arithmetic
+package NewHDLExample.Arithmetic.Add
 
 import NewHDL.Core.HDLClass
 import NewHDL.Core.HDLBase._

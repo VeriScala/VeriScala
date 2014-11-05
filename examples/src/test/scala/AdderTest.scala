@@ -1,7 +1,6 @@
 import org.scalatest.FunSuite
 
-import NewHDLExample.Arithmetic.Adder
-
+import NewHDLExample.Arithmetic.Add.Adder
 import NewHDL.Core.HDLBase._
 import NewHDL.Simulation.Core.SimulationSuite
 
