@@ -3,6 +3,7 @@ package NewHDL.Core
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
 import scala.annotation.StaticAnnotation
+import scala.math.pow
 
 import NewHDL.Exceptions.NotEnoughBitsException
 import NewHDL.Simulation.Core.Waiter
@@ -22,12 +23,39 @@ object HDLBase {
 
   case class HDLRev[T](a: HDLExp[T]) extends HDLExp[T]
 
-  class Register(val name: String, var value: Int, val length: Int) {
-    var next: Int = value
+  class Register(val name: String, var value: Int,
+    val length: Int, val signed: Boolean) {
+    private var next: Int = value
 
     private var eventWaiters: List[Waiter] = List()
     private var posedgeWaiters: List[Waiter] = List()
     private var negedgeWaiters: List[Waiter] = List()
+
+    def setNext(n: Int) {
+      if (signed) {
+        next = if (HDLPrimitive.getSignedSize(n) > length) {
+          val s = n.toBinaryString
+          val t = Integer.parseInt(s.slice(s.size - length + 1, s.size), 2)
+          if (s(s.size - length) == "1"(0)) -(~t + 1)
+          else t
+        } else {
+           n
+        }
+      } else {
+        if (n >= 0) {
+          next = if (HDLPrimitive.getUnsignedSize(n) > length) {
+            val s = n.toBinaryString
+            Integer.parseInt(s.slice(s.size - length, s.size), 2)
+          } else n
+        } else {
+          var n0 = n
+          while (n0 < 0) {
+            n0 += pow(2, length).toInt
+          }
+          next = n0
+        }
+      }
+    }
 
     def addWaiter(w: Waiter) {
       eventWaiters = w :: eventWaiters
@@ -59,6 +87,16 @@ object HDLBase {
   }
 
   trait Arithable
+
+  // Bitweise operations
+
+  case class HDLBitwiseAnd[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
+
+  case class HDLBitwiseOr[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
+
+  case class HDLBitwiseXor[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
+
+  // Arithmetic operations
 
   case class HDLAdd[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
 
@@ -94,9 +132,10 @@ object HDLBase {
 
     def getName: String
 
-    override def toRegisters = List(new Register(getName, value, length))
+    override def toRegisters = List(
+      new Register(getName, value, length, false))
     override def toRegisters(name: String) = List(
-      new Register(name, value, length))
+      new Register(name, value, length, false))
   }
 
   object HDLPrimitive {
@@ -121,6 +160,10 @@ object HDLBase {
   case class Signed(override val value: Int, override val length: Int)
       extends HDLPrimitive(value, length, true) with Arithable {
     override def getName = "Signed(" + value + ")"
+    override def toRegisters = List(
+      new Register(getName, value, length, true))
+    override def toRegisters(name: String) = List(
+      new Register(name, value, length, true))
   }
 
   case class Unsigned(override val value: Int, override val length: Int)
@@ -193,6 +236,10 @@ object HDLBase {
 
     def unary_~[S >: T] = HDLRev[S](this)
 
+    def &[S >: T](another: HDLExp[S]) = HDLBitwiseAnd(this, another)
+    def |[S >: T](another: HDLExp[S]) = HDLBitwiseOr(this, another)
+    def ^[S >: T](another: HDLExp[S]) = HDLBitwiseXor(this, another)
+
     override def toString = getName
 
     // for simulation purpose
@@ -209,14 +256,14 @@ object HDLBase {
               val theReg = v match {
                 case p: HDLType => p.toRegisters
                 case b: Boolean => List(
-                  new Register(getName, if (b) 1 else 0, length))
+                  new Register("", if (b) 1 else 0, 1, false))
               }
               theReg
             case Some(nm) =>
               val theReg = v match {
                 case p: HDLType => p.toRegisters(nm)
                 case b: Boolean => List(
-                  new Register(getName, if (b) 1 else 0, length))
+                  new Register(nm, if (b) 1 else 0, 1, false))
               }
               corresRegs = Some(theReg)
               theReg
@@ -294,7 +341,7 @@ object HDLBase {
                     })
               case _ => ()
             })
-            constructModule(moduleName, names)
+            constructModule(moduleName, names.reverse)
         }
       case DefDef(_, moduleName, _, params, _, _) =>
         val names = params(0).map((param) => param match {
@@ -341,6 +388,9 @@ trait Base {
     case HDLSub(x, y) => getSenslist(x) ++ getSenslist(y)
     case HDLMul(x, y) => getSenslist(x) ++ getSenslist(y)
     case HDLDiv(x, y) => getSenslist(x) ++ getSenslist(y)
+    case HDLBitwiseAnd(x, y) => getSenslist(x) ++ getSenslist(y)
+    case HDLBitwiseOr(x, y) => getSenslist(x) ++ getSenslist(y)
+    case HDLBitwiseXor(x, y) => getSenslist(x) ++ getSenslist(y)
   }
 
   private def getSenslist(exps: Seq[HDLExp[Any]]): Seq[HDLReg[Any]] = {
@@ -386,6 +436,18 @@ trait Compiler extends Base {
       compile(lhs) + " <= " + compile(rhs) + ";"
     case HDLAdd(x, y) =>
       compile(x) + " + " + compile(y)
+    case HDLSub(x, y) =>
+      compile(x) + " - " + compile(y)
+    case HDLMul(x, y) =>
+      compile(x) + " * " + compile(y)
+    case HDLDiv(x, y) =>
+      compile(x) + " / " + compile(y)
+    case HDLBitwiseAnd(x, y) =>
+      compile(x) + " & " + compile(y)
+    case HDLBitwiseOr(x, y) =>
+      compile(x) + " | " + compile(y)
+    case HDLBitwiseXor(x, y) =>
+      compile(x) + " ^ " + compile(y)
     case r: HDLReg[T] => r.getName
   }
 
