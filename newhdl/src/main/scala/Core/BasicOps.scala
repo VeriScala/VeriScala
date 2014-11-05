@@ -308,7 +308,7 @@ object HDLBase {
                     })
               case _ => ()
             })
-            constructModule(moduleName, names)
+            constructModule(moduleName, names.reverse)
         }
       case DefDef(_, moduleName, _, params, _, _) =>
         val names = params(0).map((param) => param match {
