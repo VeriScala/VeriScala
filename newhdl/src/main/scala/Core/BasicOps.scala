@@ -60,6 +60,16 @@ object HDLBase {
 
   trait Arithable
 
+  // Bitweise operations
+
+  case class HDLBitwiseAnd[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
+
+  case class HDLBitwiseOr[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
+
+  case class HDLBitwiseXor[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
+
+  // Arithmetic operations
+
   case class HDLAdd[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
 
   case class HDLSub[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
@@ -193,6 +203,10 @@ object HDLBase {
 
     def unary_~[S >: T] = HDLRev[S](this)
 
+    def &[S >: T](another: HDLExp[S]) = HDLBitwiseAnd(this, another)
+    def |[S >: T](another: HDLExp[S]) = HDLBitwiseOr(this, another)
+    def ^[S >: T](another: HDLExp[S]) = HDLBitwiseXor(this, another)
+
     override def toString = getName
 
     // for simulation purpose
@@ -209,14 +223,14 @@ object HDLBase {
               val theReg = v match {
                 case p: HDLType => p.toRegisters
                 case b: Boolean => List(
-                  new Register(getName, if (b) 1 else 0, length))
+                  new Register("", if (b) 1 else 0, 1))
               }
               theReg
             case Some(nm) =>
               val theReg = v match {
                 case p: HDLType => p.toRegisters(nm)
                 case b: Boolean => List(
-                  new Register(getName, if (b) 1 else 0, length))
+                  new Register(nm, if (b) 1 else 0, 1))
               }
               corresRegs = Some(theReg)
               theReg
@@ -341,6 +355,9 @@ trait Base {
     case HDLSub(x, y) => getSenslist(x) ++ getSenslist(y)
     case HDLMul(x, y) => getSenslist(x) ++ getSenslist(y)
     case HDLDiv(x, y) => getSenslist(x) ++ getSenslist(y)
+    case HDLBitwiseAnd(x, y) => getSenslist(x) ++ getSenslist(y)
+    case HDLBitwiseOr(x, y) => getSenslist(x) ++ getSenslist(y)
+    case HDLBitwiseXor(x, y) => getSenslist(x) ++ getSenslist(y)
   }
 
   private def getSenslist(exps: Seq[HDLExp[Any]]): Seq[HDLReg[Any]] = {
@@ -386,6 +403,18 @@ trait Compiler extends Base {
       compile(lhs) + " <= " + compile(rhs) + ";"
     case HDLAdd(x, y) =>
       compile(x) + " + " + compile(y)
+    case HDLSub(x, y) =>
+      compile(x) + " - " + compile(y)
+    case HDLMul(x, y) =>
+      compile(x) + " * " + compile(y)
+    case HDLDiv(x, y) =>
+      compile(x) + " / " + compile(y)
+    case HDLBitwiseAnd(x, y) =>
+      compile(x) + " & " + compile(y)
+    case HDLBitwiseOr(x, y) =>
+      compile(x) + " | " + compile(y)
+    case HDLBitwiseXor(x, y) =>
+      compile(x) + " ^ " + compile(y)
     case r: HDLReg[T] => r.getName
   }
 

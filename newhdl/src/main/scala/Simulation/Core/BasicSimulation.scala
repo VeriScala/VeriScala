@@ -225,6 +225,30 @@ trait BasicSimulations extends SimulationBase {
         val p = exec(x).zip(exec(y))
         val r = p.map(tuple => tuple._1 + tuple._2)
         r
+      case HDLSub(x, y) =>
+        val p = exec(x).zip(exec(y))
+        val r = p.map(tuple => tuple._1 - tuple._2)
+        r
+      case HDLMul(x, y) =>
+        val p = exec(x).zip(exec(y))
+        val r = p.map(tuple => tuple._1 * tuple._2)
+        r
+      case HDLDiv(x, y) =>
+        val p = exec(x).zip(exec(y))
+        val r = p.map(tuple => tuple._1 / tuple._2)
+        r
+      case HDLBitwiseAnd(x, y) =>
+        val p = exec(x).zip(exec(y))
+        val r = p.map(tuple => tuple._1 & tuple._2)
+        r
+      case HDLBitwiseOr(x, y) =>
+        val p = exec(x).zip(exec(y))
+        val r = p.map(tuple => tuple._1 | tuple._2)
+        r
+      case HDLBitwiseXor(x, y) =>
+        val p = exec(x).zip(exec(y))
+        val r = p.map(tuple => tuple._1 ^ tuple._2)
+        r
       case r: HDLReg[T] =>
         r.registers.map(_.value).toList
     }
