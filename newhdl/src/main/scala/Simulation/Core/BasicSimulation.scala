@@ -216,7 +216,7 @@ trait BasicSimulations extends SimulationBase {
       case HDLAssign(lhs, rhs) =>
         val res = exec(rhs)
         lhs.registers.zip(res).map { kv =>
-          kv._1.next = kv._2
+          kv._1.setNext(kv._2)
         }
         res
       case HDLRev(x) =>

@@ -3,6 +3,7 @@ package NewHDL.Core
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
 import scala.annotation.StaticAnnotation
+import scala.math.pow
 
 import NewHDL.Exceptions.NotEnoughBitsException
 import NewHDL.Simulation.Core.Waiter
@@ -22,12 +23,39 @@ object HDLBase {
 
   case class HDLRev[T](a: HDLExp[T]) extends HDLExp[T]
 
-  class Register(val name: String, var value: Int, val length: Int) {
-    var next: Int = value
+  class Register(val name: String, var value: Int,
+    val length: Int, val signed: Boolean) {
+    private var next: Int = value
 
     private var eventWaiters: List[Waiter] = List()
     private var posedgeWaiters: List[Waiter] = List()
     private var negedgeWaiters: List[Waiter] = List()
+
+    def setNext(n: Int) {
+      if (signed) {
+        next = if (HDLPrimitive.getSignedSize(n) > length) {
+          val s = n.toBinaryString
+          val t = Integer.parseInt(s.slice(s.size - length + 1, s.size), 2)
+          if (s(s.size - length) == "1"(0)) -(~t + 1)
+          else t
+        } else {
+           n
+        }
+      } else {
+        if (n >= 0) {
+          next = if (HDLPrimitive.getUnsignedSize(n) > length) {
+            val s = n.toBinaryString
+            Integer.parseInt(s.slice(s.size - length, s.size), 2)
+          } else n
+        } else {
+          var n0 = n
+          while (n0 < 0) {
+            n0 += pow(2, length).toInt
+          }
+          next = n0
+        }
+      }
+    }
 
     def addWaiter(w: Waiter) {
       eventWaiters = w :: eventWaiters
@@ -104,9 +132,10 @@ object HDLBase {
 
     def getName: String
 
-    override def toRegisters = List(new Register(getName, value, length))
+    override def toRegisters = List(
+      new Register(getName, value, length, false))
     override def toRegisters(name: String) = List(
-      new Register(name, value, length))
+      new Register(name, value, length, false))
   }
 
   object HDLPrimitive {
@@ -131,6 +160,10 @@ object HDLBase {
   case class Signed(override val value: Int, override val length: Int)
       extends HDLPrimitive(value, length, true) with Arithable {
     override def getName = "Signed(" + value + ")"
+    override def toRegisters = List(
+      new Register(getName, value, length, true))
+    override def toRegisters(name: String) = List(
+      new Register(name, value, length, true))
   }
 
   case class Unsigned(override val value: Int, override val length: Int)
@@ -223,14 +256,14 @@ object HDLBase {
               val theReg = v match {
                 case p: HDLType => p.toRegisters
                 case b: Boolean => List(
-                  new Register("", if (b) 1 else 0, 1))
+                  new Register("", if (b) 1 else 0, 1, false))
               }
               theReg
             case Some(nm) =>
               val theReg = v match {
                 case p: HDLType => p.toRegisters(nm)
                 case b: Boolean => List(
-                  new Register(nm, if (b) 1 else 0, 1))
+                  new Register(nm, if (b) 1 else 0, 1, false))
               }
               corresRegs = Some(theReg)
               theReg
