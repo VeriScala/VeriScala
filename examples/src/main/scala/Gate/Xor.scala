@@ -1,6 +1,5 @@
 package NewHDLExample.Gate.Xor
 
-import NewHDL.Core.HDLClass
 import NewHDL.Core.HDLBase._
 
 class Xor[T](clk: HDL[Boolean], rst: HDL[Boolean],

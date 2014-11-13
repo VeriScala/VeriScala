@@ -1,6 +1,5 @@
 package NewHDLExample.Gate.And
 
-import NewHDL.Core.HDLClass
 import NewHDL.Core.HDLBase._
 
 class And[T](clk: HDL[Boolean], rst: HDL[Boolean],

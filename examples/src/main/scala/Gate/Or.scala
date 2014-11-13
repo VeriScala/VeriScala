@@ -1,6 +1,5 @@
 package NewHDLExample.Gate.Or
 
-import NewHDL.Core.HDLClass
 import NewHDL.Core.HDLBase._
 
 class Or[T](clk: HDL[Boolean], rst: HDL[Boolean],

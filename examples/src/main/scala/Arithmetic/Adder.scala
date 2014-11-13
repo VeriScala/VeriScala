@@ -1,6 +1,5 @@
 package NewHDLExample.Arithmetic.Add
 
-import NewHDL.Core.HDLClass
 import NewHDL.Core.HDLBase._
 
 class Adder[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],

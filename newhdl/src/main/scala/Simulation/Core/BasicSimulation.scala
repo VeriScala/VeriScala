@@ -1,7 +1,5 @@
 package NewHDL.Simulation.Core
 
-import NewHDL.Core.HDLClass
-import NewHDL.Core.Base
 import NewHDL.Core.HDLBase._
 import NewHDL.Simulation.Exceptions.SimulatorException
 
