@@ -89,9 +89,10 @@ object HDLBase {
 
   trait Arithable
 
-  case class HDLIndex[T](a: HDLExp[T], idx: Int) extends HDLExp[T]
+  case class HDLIndex[T](a: HDLExp[T], idx: Int) extends HDLDef[T] {
+  }
 
-  case class HDLSlice[T](a: HDLExp[T], hi: Int, lo: Int) extends HDLExp[T]
+  case class HDLSlice[T](a: HDLExp[T], hi: Int, lo: Int) extends HDLDef[T]
 
   // Bitweise operations
 
@@ -206,9 +207,16 @@ object HDLBase {
 
   abstract class HDLExp[+T] {
     def is[S >: T](other: HDLExp[S]) = HDLEquals[S](this, other)
+
+    def unary_~[S >: T] = HDLRev[S](this)
+
+    def &[S >: T](another: HDLExp[S]) = HDLBitwiseAnd(this, another)
+    def |[S >: T](another: HDLExp[S]) = HDLBitwiseOr(this, another)
+    def ^[S >: T](another: HDLExp[S]) = HDLBitwiseXor(this, another)
+
   }
 
-  case class HDLAssign[T](lhs: HDLReg[T], rhs: HDLExp[T])
+  case class HDLAssign[T](lhs: HDLDef[T], rhs: HDLExp[T])
       extends HDLExp[T]
 
   case class HDLEquals[T](lhs: HDLExp[T], rhs: HDLExp[T]) extends HDLExp[Boolean]
@@ -217,7 +225,13 @@ object HDLBase {
     suc: Seq[HDLExp[Any]], fal: Seq[HDLExp[Any]])
       extends HDLExp[T]
 
-  abstract class HDLDef[+T] extends HDLExp[T]
+  abstract class HDLDef[+T] extends HDLExp[T] {
+    def :=[S >: T](rhs: HDLExp[S]) = {
+      val a = HDLAssign[S](this, rhs)
+      addExp(a)
+      a
+    }
+  }
 
   class HDLReg[+T](_value: => T) extends HDLDef[T] {
 
@@ -238,7 +252,7 @@ object HDLBase {
 
     def value = hdlval(_value)
 
-    def :=[S >: T](rhs: HDLExp[S]) = {
+    override def :=[S >: T](rhs: HDLExp[S]) = {
       out = true
       val a = HDLAssign[S](this, rhs)
       addExp(a)
@@ -265,12 +279,6 @@ object HDLBase {
     def apply[S >: T](idx: Int): HDLIndex[S] = HDLIndex[S](this, idx)
 
     def apply[S >: T](hi: Int, lo: Int): HDLSlice[S] = HDLSlice[S](this, hi, lo)
-
-    def unary_~[S >: T] = HDLRev[S](this)
-
-    def &[S >: T](another: HDLExp[S]) = HDLBitwiseAnd(this, another)
-    def |[S >: T](another: HDLExp[S]) = HDLBitwiseOr(this, another)
-    def ^[S >: T](another: HDLExp[S]) = HDLBitwiseXor(this, another)
 
     override def toString = getName
 
@@ -445,7 +453,7 @@ object HDLBase {
     class HDLAsyncPart {
       def apply(exps: HDLExp[Any]*) = {
         val exps = getAndClearExps
-        val senslist = getSenslist(exps)
+        val senslist = getSenslist(exps).distinct
         HDLAsyncBlock(senslist, exps)
       }
     }
@@ -517,7 +525,6 @@ object HDLBase {
       case HDLBitwiseXor(x, y) =>
         compile(x) + " ^ " + compile(y)
       case HDLIndex(x, idx) =>
-        println(("idx", x))
         compile(x) + "[" + idx + "]"
       case HDLSlice(x, hi, lo) =>
         compile(x) + List("[", hi - 1, ":", lo, "]").mkString("")
