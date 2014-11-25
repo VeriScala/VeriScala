@@ -1,7 +1,6 @@
 package NewHDLExamples.FlipFlop
 
 import NewHDL.Core.HDLBase._
-import NewHDL.Core.HDLClass
 
 class FF(clk: HDL[Boolean], rst: HDL[Boolean],
   q: HDL[Boolean], d: HDL[Boolean]) extends HDLClass {

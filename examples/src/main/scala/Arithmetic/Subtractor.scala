@@ -1,6 +1,5 @@
 package NewHDLExample.Arithmetic.Sub
 
-import NewHDL.Core.HDLClass
 import NewHDL.Core.HDLBase._
 
 class Subtractor[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],

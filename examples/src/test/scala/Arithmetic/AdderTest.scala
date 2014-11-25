@@ -13,11 +13,11 @@ class AdderTestBench[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
       clk := ~clk
     },
 
-    sync(clk, 0) (
-      rst := 0,
-      a := A.next(),
+    sync(clk, 0) {
+      rst := 0
+      a := A.next()
       b := B.next()
-    ))
+    })
 
   override val toSimulate = List(add, bench)
   override val traceFileName = "adder.vcd"
