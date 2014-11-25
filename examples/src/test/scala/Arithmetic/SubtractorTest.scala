@@ -13,11 +13,11 @@ class SubtractorTestBench[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
       clk := ~clk
     },
 
-    sync(clk, 0) (
-      rst := 0,
-      a := A.next(),
+    sync(clk, 0) {
+      rst := 0
+      a := A.next()
       b := B.next()
-    ))
+    })
 
   override val toSimulate = List(sub, bench)
   override val traceFileName = "sub.vcd"

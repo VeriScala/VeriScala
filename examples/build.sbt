@@ -7,4 +7,5 @@ lazy val examples = project
     organization := "com.liyaos",
     scalaVersion := "2.11.0",
     version := "0.0.1",
+    parallelExecution in Test := false,
     libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % "2.2.1" % "test"))
