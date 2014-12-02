@@ -24,13 +24,20 @@ object HDLBase {
 
   case class HDLRev[T](a: HDLExp[T]) extends HDLExp[T]
 
-  class Register(val name: String, var value: Int,
+  class Register(val name: String, _value: Int,
     val length: Int, val signed: Boolean) {
-    private var next: Int = value
+    var value = _value
+    protected var next: Int = value
 
     private var eventWaiters: List[Waiter] = List()
     private var posedgeWaiters: List[Waiter] = List()
     private var negedgeWaiters: List[Waiter] = List()
+
+    def apply(n: Int): Int = {
+      if (n < length)
+        (value / (pow(2, n).toInt)) & 1
+      else 0
+    }
 
     def setNext(n: Int) {
       if (signed) {
@@ -71,7 +78,7 @@ object HDLBase {
       next != value
 
     def update: List[Waiter] = {
-      if (next != value) {
+      if (needUpdate) {
         var lst = eventWaiters
         if (value < next)
           lst = posedgeWaiters ::: lst
@@ -87,12 +94,45 @@ object HDLBase {
       name + "(" + value + ", " + length + ")"
   }
 
-  trait Arithable
+  class RegisterBit(override val name: String, _value: Int,
+    reg: Register, idx: Int)
+      extends Register(name, _value, 1, false) {
 
-  case class HDLIndex[T](a: HDLExp[T], idx: Int) extends HDLDef[T] {
+    def getReg = reg
+
+    override def setNext(n: Int) {
+      if (n < 2 && n >= 0) {
+        if (next != n) {
+          next = n
+        }
+      }
+    }
+
+    // Not used!
+    override def update: List[Waiter] = {
+      if (needUpdate) {
+        value = next
+        reg.setNext(reg.value ^ (1 << idx))
+        reg.update
+      }
+      else List()
+    }
+
+    override def toString =
+      reg.toString + "(" + idx + ":" + value + ")"
   }
 
-  case class HDLSlice[T](a: HDLExp[T], hi: Int, lo: Int) extends HDLDef[T]
+  trait Arithable
+
+  case class HDLIndex[T](a: HDLDef[T], idx: Int) extends HDLDef[T] {
+    override def registers: List[Register] = a.registers.map {
+      r => new RegisterBit(r.name, (r.value >> idx) & 1, r, idx)
+    }
+  }
+
+  case class HDLSlice[T](a: HDLExp[T], hi: Int, lo: Int) extends HDLDef[T] {
+    override def registers: List[Register] = a.registers
+  }
 
   // Bitweise operations
 
@@ -182,7 +222,7 @@ object HDLBase {
     if (x != 0) true else false)
   implicit def signed2hdlsigned(x: => Signed) = new HDLReg[Signed](x)
   implicit def unsigned2hdlunsigned(x: => Unsigned) = new HDLReg[Unsigned](x)
-  implicit def any2hdl[T](x: => T) = new HDLReg[T](x)
+  implicit def any2hdl[T](x: => T): HDLReg[T] = new HDLReg[T](x)
 
   private var exps: List[HDLExp[Any]] = List()
   private val expStack: Stack[List[HDLExp[Any]]] = new Stack()
@@ -231,6 +271,8 @@ object HDLBase {
       addExp(a)
       a
     }
+
+    def registers: List[Register]
   }
 
   class HDLReg[+T](_value: => T) extends HDLDef[T] {
@@ -280,12 +322,12 @@ object HDLBase {
 
     def apply[S >: T](hi: Int, lo: Int): HDLSlice[S] = HDLSlice[S](this, hi, lo)
 
-    override def toString = getName
+    override def toString = "HDLReg " + getName
 
     // for simulation purpose
     protected var corresRegs: Option[List[Register]] = None
 
-    def registers: List[Register] =
+    override def registers: List[Register] =
       corresRegs match {
         case Some(theReg) =>
           theReg
@@ -313,10 +355,11 @@ object HDLBase {
     override def equals(other: Any): Boolean = other match {
       case num: Int =>
         registers.size == 1 && registers(0).value == num
+      case reg: HDLReg[T] =>
+        getName == reg.getName && value == reg.value &&
+        length == reg.length && signed == reg.signed
     }
   }
-
-  case class HDLConst[T](unit: T) extends HDLDef[T]
 
   abstract class HDLBlock(val exps: Seq[HDLExp[Any]])
 
