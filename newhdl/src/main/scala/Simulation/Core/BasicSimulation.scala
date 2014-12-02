@@ -9,6 +9,7 @@ import java.io.BufferedWriter
 import java.util.Date
 import java.util.Locale
 import java.text.SimpleDateFormat
+import math.pow
 
 import scala.collection.mutable.PriorityQueue
 
@@ -93,6 +94,7 @@ trait SimulationBase {
   }
 
   protected var regs: Set[Register] = Set()
+  protected var tempRegs: Set[Register] = Set()
   protected var futureEvents: PriorityQueue[(Int, Waiter)] =
     new PriorityQueue[(Int, Waiter)]()(Ordering[(Int)].on(x => -x._1))
   protected var currentTime = 0
@@ -138,12 +140,22 @@ trait SimulationBase {
   protected def doSimulation(maxTime: Int): Int = {
     if (maxTime == 0) return currentTime
     while (true) {
-      for (reg <- regs) {
-        val old = reg.value
-        waiters = reg.update ::: waiters
-        if (reg.value != old)
-          trace.logNew(reg)
+      for (reg <- (regs ++ tempRegs)) {
+        reg match {
+          case b: RegisterBit =>
+            val r = b.getReg
+            val old = r.value
+            waiters = reg.update ::: waiters
+            if (r.value != old)
+              trace.logNew(r)
+          case r: Register =>
+            val old = reg.value
+            waiters = reg.update ::: waiters
+            if (reg.value != old)
+              trace.logNew(reg)
+        }
       }
+      tempRegs = Set()
       waiters = waiters.distinct
       for (waiter <- waiters) {
         val exps = waiter.next
@@ -158,7 +170,7 @@ trait SimulationBase {
       }
       currentTime = nextTime
       waiters = List()
-      if (!regs.exists(_.needUpdate)) {
+      if (!(regs ++ tempRegs).exists(_.needUpdate)) {
         if (futureEvents.isEmpty) {
           trace.log("#" + maxTime)
           return currentTime
@@ -213,8 +225,16 @@ trait BasicSimulations extends SimulationBase {
         else fal.flatMap(exec(_)).toList
       case HDLAssign(lhs, rhs) =>
         val res = exec(rhs)
-        lhs.registers.zip(res).map { kv =>
-          kv._1.setNext(kv._2)
+        lhs match {
+          case lreg: HDLReg[T] =>
+            lreg.registers.zip(res).map { kv =>
+              kv._1.setNext(kv._2)
+            }
+          case lidx: HDLIndex[T] =>
+            lidx.registers.zip(res).map { kv =>
+              tempRegs = tempRegs + kv._1
+              kv._1.setNext(kv._2)
+            }
         }
         res
       case HDLRev(x) =>
@@ -247,6 +267,8 @@ trait BasicSimulations extends SimulationBase {
         val p = exec(x).zip(exec(y))
         val r = p.map(tuple => tuple._1 ^ tuple._2)
         r
+      case HDLIndex(obj, idx) =>
+        exec(obj).map(x => (x >> idx) & 1).toList
       case r: HDLReg[T] =>
         r.registers.map(_.value).toList
     }

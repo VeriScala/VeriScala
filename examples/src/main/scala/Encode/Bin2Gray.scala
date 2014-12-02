@@ -10,7 +10,7 @@ class Bin2Gray[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
         g := 0
       } .otherwise {
         for (i <- 0 until width)
-          g(i) := b(i + 1) ^ g(i)
+          g(i) := b(i + 1) ^ b(i)
         g(width) := b(width)
       }
     }
