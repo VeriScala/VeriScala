@@ -170,7 +170,7 @@ trait SimulationBase {
       }
       currentTime = nextTime
       waiters = List()
-      if (!regs.exists(_.needUpdate)) {
+      if (!(regs ++ tempRegs).exists(_.needUpdate)) {
         if (futureEvents.isEmpty) {
           trace.log("#" + maxTime)
           return currentTime
