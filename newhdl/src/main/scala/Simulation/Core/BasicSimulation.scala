@@ -115,6 +115,9 @@ trait SimulationBase {
     for (param <- module.params) {
       regs ++= param.registers
     }
+    for (reg <- module.internalRegs) {
+      regs ++= reg.registers
+    }
 
     for (block <- module.blocks) block match {
       case s: HDLSyncBlock =>

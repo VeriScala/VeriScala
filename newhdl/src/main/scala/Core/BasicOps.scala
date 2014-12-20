@@ -4,6 +4,7 @@ import scala.reflect.macros.Context
 import scala.language.experimental.macros
 import scala.annotation.StaticAnnotation
 import scala.collection.mutable.Stack
+import scala.util.DynamicVariable
 import scala.math.pow
 
 import NewHDL.Exceptions.NotEnoughBitsException
@@ -21,6 +22,10 @@ object HDLBase {
     case b: Boolean => if (b) 1 else 0
     case i: Int => i
   }
+
+  val currentMod = new DynamicVariable[HDLModule](null)
+
+  def HDLlize[T](x: T): HDLReg[T] = currentMod.value.HDLlize(x)
 
   case class HDLRev[T](a: HDLExp[T]) extends HDLExp[T]
 
@@ -375,12 +380,35 @@ object HDLBase {
     override val exps: Seq[HDLExp[Any]])
       extends HDLBlock(exps)
 
-  class HDLModule(_name: String,
-    _params: List[HDLReg[Any]], _blocks: List[HDLBlock]) {
+  class HDLModule(_name: String) {
+
     val name = _name
-    val blocks = _blocks
-    val params = _params
+    private var _params: List[HDLReg[Any]] = List()
+    private var _blocks: List[HDLBlock] = List()
+    var internalRegs: List[HDLReg[Any]] = List()
     var analyzed = false
+
+    private var regCounter = 0
+
+    def HDLlize[T](x: T): HDLReg[T] = {
+      val r = new HDLReg(x)
+      r.setName("temp" + regCounter)
+      internalRegs = r :: internalRegs
+      regCounter += 1
+      r
+    }
+
+    def setParams(params: List[HDLReg[Any]]) {
+      _params = params
+    }
+
+    def params = _params
+
+    def setBlocks(blocks: List[HDLBlock]) {
+      _blocks = blocks
+    }
+
+    def blocks = _blocks
   }
 
   def moduleImpl(c: Context)(blocks: c.Expr[HDLBlock]*):
@@ -395,13 +423,18 @@ object HDLBase {
           List(Literal(Constant(name.toString)))))
       val r = Apply(Select(New(Ident(newTypeName("HDLModule"))),
         nme.CONSTRUCTOR),
-        List(Literal(Constant(moduleName.decoded)),
-          Apply(Select(Ident("List"), newTermName("apply")),
-            names.map(Ident(_)).toList),
-          Apply(Select(Ident("List"), newTermName("apply")),
-            blocks.map(_.tree).toList)))
-      // return above two as a block
-      c.Expr[HDLModule](Block(l, r))
+        List(Literal(Constant(moduleName.decoded))))
+      val mod = newTermName("mod")
+      val d = ValDef(Modifiers(), mod, TypeTree(), r)
+      val p = Apply(Select(Ident(mod), newTermName("setParams")),
+        List(Apply(Select(Ident("List"), newTermName("apply")),
+          names.map(Ident(_)).toList)))
+      val b = Apply(Select(Ident(mod), newTermName("setBlocks")),
+        List(Apply(Select(Ident("List"), newTermName("apply")),
+          blocks.map(_.tree).toList)))
+      val db = Apply(Apply(Select(Ident(newTermName("currentMod")),
+        newTermName("withValue")), List(Ident(mod))), List(Block(List(p), b)))
+      c.Expr[HDLModule](Block(l ++ List(r, d, db), Ident(mod)))
     }
 
     // replace "enclosingMethod" with "enclosingDef"
@@ -517,7 +550,7 @@ object HDLBase {
     }
 
     case class WhenPart1(cond: HDLExp[Boolean]) {
-      def apply(exps: HDLExp[Any]) = {
+      def apply(exps: Unit*) = {
         val p = WhenPart2(cond, getAndClearExps)
         incExpLvl
         p
@@ -525,7 +558,7 @@ object HDLBase {
     }
 
     case class WhenPart2(cond: HDLExp[Boolean], suc: List[HDLExp[Any]]) {
-      def otherwise(exps: HDLExp[Any]) = {
+      def otherwise(exps: Unit*) = {
         val fal = getAndClearExps
         val w = HDLWhen(cond, suc, fal)
         addExp(w)
@@ -599,16 +632,20 @@ object HDLBase {
       m.params.map((p) =>
         (if (p.out) "output " else "input ")
           + p.signedString + p.lengthString + p.getName +
-          ";\n").toList.sorted.mkString("") +
+          ";\n").toList.sorted.mkString("")
       regs.map(p => "reg " +
         p.signedString + p.lengthString +
         p.getName + ";\n").toList.sorted.mkString("") +
-      "\ninitial begin\n" + regs.map((p) =>
-        p.getName + " = " + p.value + ";\n").mkString("") + "end\n\n"
+      m.internalRegs.map((r) =>
+        "reg " + r.signedString + r.lengthString + r.getName +
+          ";\n").toList.sorted.mkString("") +
+      "\ninitial begin\n" + (regs ++ m.internalRegs).map((p) =>
+        p.getName + " = " + p.value + ";\n").sorted.mkString("") + "end\n\n"
     }
 
     def compile(m: HDLModule): String = {
-      moduleDeclaration(m, registerDeclaration(m) +
+      moduleDeclaration(m,
+        registerDeclaration(m) +
         (for (block <- m.blocks) yield compile(block)).mkString("\n"))
     }
   }
