@@ -27,7 +27,7 @@ class FIFOTest extends FunSuite {
   val width = 3
   val depth = 2
   val inputs = List(0, 7, 0, 3, 0, 1, 0, 0).map(Unsigned(_, width)).iterator
-  val outputs = List(0, 0, 0, 0, 7, 0, 3, 0, 1).iterator
+  val outputs = List(0, 0, 0, 7, 0, 3, 0, 1).iterator
 
   test("test fifo") {
     val clk = HDL(false)
@@ -35,11 +35,12 @@ class FIFOTest extends FunSuite {
     val output = HDL(Unsigned(0, width))
     val bench = new FIFOTestBench(clk, 0,
       input, output, width, depth, Unsigned(0, width), inputs)
-    bench since 0 until 14 every 2 run {
+    bench since 0 until 16 every 2 run {
       assert(clk === 0)
     }
-    bench since 1 until 14 every 2 run {
+    bench since 1 until 16 every 2 run {
       assert(clk === 1)
+      assert(output === outputs.next())
     }
     bench test
   }
