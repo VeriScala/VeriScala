@@ -272,6 +272,9 @@ trait BasicSimulations extends SimulationBase {
         r
       case HDLIndex(obj, idx) =>
         exec(obj).map(x => (x >> idx) & 1).toList
+      case HDLValueListElem(lst, idx) =>
+        // is it wise to use index 0?
+        exec(lst.lst(exec(idx)(0)))
       case r: HDLReg[T] =>
         r.registers.map(_.value).toList
     }
