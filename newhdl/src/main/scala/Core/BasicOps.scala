@@ -139,6 +139,16 @@ object HDLBase {
     override def registers: List[Register] = a.registers
   }
 
+  case class HDLValueList[T](lst: List[HDLExp[T]]) extends HDLDef[T] {
+    override def registers: List[Register] = lst.flatMap(_.registers)
+    def apply(idx: HDLReg[Unsigned]) = HDLValueListElem(this, idx)
+  }
+
+  case class HDLValueListElem[T](lst: HDLValueList[T], idx: HDLReg[Unsigned])
+      extends HDLDef[T] {
+    override def registers: List[Register] = lst.registers
+  }
+
   // Bitweise operations
 
   case class HDLBitwiseAnd[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
@@ -228,6 +238,8 @@ object HDLBase {
   implicit def signed2hdlsigned(x: => Signed) = new HDLReg[Signed](x)
   implicit def unsigned2hdlunsigned(x: => Unsigned) = new HDLReg[Unsigned](x)
   implicit def any2hdl[T](x: => T): HDLReg[T] = new HDLReg[T](x)
+  implicit def list2hdllist[T](x: List[T]): HDLValueList[T] =
+    HDLValueList(x.map(any2hdl(_)))
 
   private var exps: List[HDLExp[Any]] = List()
   private val expStack: Stack[List[HDLExp[Any]]] = new Stack()
@@ -585,7 +597,16 @@ object HDLBase {
         "if (" + c + ") begin\n" + suc.map(compile(_)).mkString(";\n") +
         "\nend\nelse begin\n" + fal.map(compile(_)).mkString(";\n") + "\nend\n"
       case HDLAssign(lhs, rhs) =>
-        compile(lhs) + " <= " + compile(rhs) + ";"
+        rhs match {
+          case HDLValueListElem(lst, idx) =>
+            val l = lst.lst
+            val s = (0 until l.length).map(i =>
+              List(i, ": ", compile(lhs),
+                " <= ", compile(l(i))).mkString).mkString("\n")
+            "case (" + idx.getName + ")\n" + s + "\nendcase\n"
+          case _ =>
+            compile(lhs) + " <= " + compile(rhs) + ";"
+        }
       case HDLAdd(x, y) =>
         compile(x) + " + " + compile(y)
       case HDLSub(x, y) =>
