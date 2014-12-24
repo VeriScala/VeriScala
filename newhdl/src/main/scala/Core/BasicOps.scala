@@ -25,6 +25,7 @@ object HDLBase {
 
   val currentMod = new DynamicVariable[HDLModule](null)
 
+//  def HDLlize[T](x: Seq[T]): HDLList[T] = currentMod.value.HDLlize(x)
   def HDLlize[T](x: T): HDLReg[T] = currentMod.value.HDLlize(x)
 
   case class HDLRev[T](a: HDLExp[T]) extends HDLExp[T]
@@ -232,13 +233,10 @@ object HDLBase {
     override def getName = "Unsigned(" + value + ")"
   }
 
-  implicit def bool2hdlboolreg(x: => Boolean) = new HDLReg[Boolean](x)
   implicit def int2hdlboolreg(x: => Int) = new HDLReg[Boolean](
     if (x != 0) true else false)
-  implicit def signed2hdlsigned(x: => Signed) = new HDLReg[Signed](x)
-  implicit def unsigned2hdlunsigned(x: => Unsigned) = new HDLReg[Unsigned](x)
   implicit def any2hdl[T](x: => T): HDLReg[T] = new HDLReg[T](x)
-  implicit def list2hdllist[T](x: List[T]): HDLValueList[T] =
+  implicit def list2hdlvaluelist[T](x: List[T]): HDLValueList[T] =
     HDLValueList(x.map(any2hdl(_)))
 
   private var exps: List[HDLExp[Any]] = List()
@@ -318,7 +316,8 @@ object HDLBase {
       a
     }
 
-    def length = _value match {
+    def length: Int = _value match {
+      case Seq(a, _*) => a.length
       case p: HDLPrimitive => p.length
       case b: Boolean => 1
     }
@@ -327,7 +326,9 @@ object HDLBase {
       if (length > 1) "[" + (length - 1) + ":0] "
       else ""
 
-    def signed = _value match {
+    def signed: Boolean = _value match {
+      case Seq(a, _*) =>
+        a.signed
       case p: HDLPrimitive => p.signed
       case b: Boolean => false
     }
@@ -335,11 +336,27 @@ object HDLBase {
     def signedString =
       if (signed) "signed " else ""
 
+    def sizeString = _value match {
+      case s: Seq[Any] => " [0:" + (s.length-1) + "]"
+      case _ => ""
+    }
+
     def apply[S >: T](idx: Int): HDLIndex[S] = HDLIndex[S](this, idx)
 
     def apply[S >: T](hi: Int, lo: Int): HDLSlice[S] = HDLSlice[S](this, hi, lo)
 
+    def apply[S >: T](idx: HDLReg[Unsigned]): HDLListElem[S] = HDLListElem(this, idx)
+
     override def toString = "HDLReg " + getName
+
+    def initDecl: String = _value match {
+      case s: Seq[Any] =>
+        val a = (0 until s.length).zip(s.map(any2hdl(_))).map(elt =>
+          getName + "[" + elt._1 + "] = " + elt._2.value).mkString(";\n") + ";\n"
+        a
+      case _ =>
+        getName + " = " + value + ";\n"
+    }
 
     // for simulation purpose
     protected var corresRegs: Option[List[Register]] = None
@@ -378,6 +395,13 @@ object HDLBase {
     }
   }
 
+  case class HDLListElem[T](lst: HDLReg[T], idx: HDLReg[Unsigned])
+      extends HDLDef[T] {
+    override def registers: List[Register] = lst.registers
+  }
+
+
+
   abstract class HDLBlock(val exps: Seq[HDLExp[Any]])
 
   case class HDLSyncBlock(val reg: HDLReg[Boolean], val when: Int,
@@ -401,6 +425,15 @@ object HDLBase {
     var analyzed = false
 
     private var regCounter = 0
+
+/*
+    def HDLlize[T](x: Seq[T]): HDLList[T] = {
+      val l = new HDLList(x.map(any2hdl(_)), "temp" + regCounter)
+      internalRegs = l :: internalRegs
+      regCounter += 1
+      l
+    }
+ */
 
     def HDLlize[T](x: T): HDLReg[T] = {
       val r = new HDLReg(x)
@@ -625,6 +658,8 @@ object HDLBase {
         compile(x) + "[" + idx + "]"
       case HDLSlice(x, hi, lo) =>
         compile(x) + List("[", hi - 1, ":", lo, "]").mkString("")
+      case HDLListElem(lst, idx) =>
+        compile(lst) + "[" + compile(idx) + "]"
       case r: HDLReg[T] =>
         r.getName
     }
@@ -656,12 +691,12 @@ object HDLBase {
           ";\n").toList.sorted.mkString("")
       regs.map(p => "reg " +
         p.signedString + p.lengthString +
-        p.getName + ";\n").toList.sorted.mkString("") +
+        p.getName + p.sizeString + ";\n").toList.sorted.mkString("") +
       m.internalRegs.map((r) =>
-        "reg " + r.signedString + r.lengthString + r.getName +
+        "reg " + r.signedString + r.lengthString + r.getName + r.sizeString +
           ";\n").toList.sorted.mkString("") +
-      "\ninitial begin\n" + (regs ++ m.internalRegs).map((p) =>
-        p.getName + " = " + p.value + ";\n").sorted.mkString("") + "end\n\n"
+      "\ninitial begin\n" + (regs ++ m.internalRegs).map(
+        _.initDecl).sorted.mkString("") + "end\n\n"
     }
 
     def compile(m: HDLModule): String = {
