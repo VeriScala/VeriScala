@@ -688,7 +688,7 @@ object HDLBase {
       m.params.map((p) =>
         (if (p.out) "output " else "input ")
           + p.signedString + p.lengthString + p.getName +
-          ";\n").toList.sorted.mkString("")
+          ";\n").toList.sorted.mkString("") +
       regs.map(p => "reg " +
         p.signedString + p.lengthString +
         p.getName + p.sizeString + ";\n").toList.sorted.mkString("") +
