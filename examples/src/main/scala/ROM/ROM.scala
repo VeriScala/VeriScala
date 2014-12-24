@@ -3,7 +3,7 @@ package NewHDLExample.ROM
 import NewHDL.Core.HDLBase._
 
 class ROM[T](clk: HDL[Boolean], addr: HDL[Unsigned],
-  dout: HDL[T], data: HDLValueList[T]) extends HDLClass {
+  dout: HDL[T], data: List[T]) extends HDLClass {
 
   def rom = module {
     sync(clk, 1) {
