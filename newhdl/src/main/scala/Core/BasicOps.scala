@@ -255,6 +255,11 @@ object HDLBase {
     expStack.push(lst)
     expStack
   }
+  def removeLastExp = {
+    val lst = expStack.pop
+    expStack.push(lst.tail)
+    expStack
+  }
   def getExps = expStack.top.reverse
   def incExpLvl {
     expStack.push(List())
@@ -609,20 +614,20 @@ object HDLBase {
 
     case class WhenPart1(cond: HDLExp[Boolean]) {
       def apply(exps: Unit*) = {
-        val p = new WhenPart2(cond, getAndClearExps)
+        val p = new WhenPart2(List(
+          HDLNormalCondition(cond, getAndClearExps)))
         p
       }
     }
 
-    class WhenPart2(cond: HDLExp[Boolean], suc: List[HDLExp[Any]]) {
+    class WhenPart2(conds: List[HDLCondition[Any]]) {
 
-      addExp(HDLWhen(List(HDLNormalCondition(cond, suc))))
+      addExp(HDLWhen(conds))
 
       object HDLOtherwise {
         def apply(exps: Unit*) = {
           val fal = getAndClearExps
-          conditions = HDLBooleanCondition(true, fal) :: conditions
-          val w = HDLWhen(conditions)
+          val w = HDLWhen(HDLBooleanCondition(true, fal) :: conds)
           replaceLastExp(w)
           w
         }
@@ -631,15 +636,12 @@ object HDLBase {
       object HDLElsewhen {
         def apply(cond: HDLExp[Boolean])(exps: Unit*) = {
           val oth = getAndClearExps
-          conditions = HDLNormalCondition(cond, oth) :: conditions
-          val w = HDLWhen(conditions)
-          replaceLastExp(w)
-          w
+          val conds2 = HDLNormalCondition(cond, oth) :: conds
+          val w = HDLWhen(conds2)
+          removeLastExp
+          new WhenPart2(conds2)
         }
       }
-
-      private var conditions: List[HDLCondition[Any]] =
-        List(HDLNormalCondition(cond, suc))
 
       def otherwise = {
         incExpLvl
