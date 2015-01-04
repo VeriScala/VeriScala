@@ -30,7 +30,7 @@ object Main {
   def main(args: Array[String]) {
     val depth = 4
     val width = 3
-    println(new FIFO(0, 0,
+    println(new FIFO(false, false,
       Unsigned(0, width), Unsigned(0, width),
       width, depth, Unsigned(0, width)).compile)
   }

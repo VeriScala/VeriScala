@@ -26,7 +26,7 @@ object Main {
     val depth = math.pow(2, wl_addr).toInt
     val width = math.pow(2, wl_data).toInt
 
-    println(new RAM(0, 0,
+    println(new RAM(false, false,
       Unsigned(0, wl_addr), Unsigned(0, wl_data), Unsigned(0, wl_data),
       depth, width).compile)
   }

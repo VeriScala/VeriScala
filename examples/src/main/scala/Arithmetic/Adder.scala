@@ -19,7 +19,7 @@ class Adder[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
 
 object Main {
   def main(args: Array[String]) {
-    println((new Adder(0, 0,
+    println((new Adder(false, false,
       Signed(0, 5), Signed(1, 5), Signed(0, 6))).compile)
   }
 }

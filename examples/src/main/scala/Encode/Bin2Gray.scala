@@ -22,7 +22,7 @@ class Bin2Gray[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
 object Main {
   def main(args: Array[String]) {
     val width = 5
-    println((new Bin2Gray(0, 0,
+    println((new Bin2Gray(false, false,
       Unsigned(0, width + 1), Unsigned(0, width + 1), width)).compile)
   }
 }

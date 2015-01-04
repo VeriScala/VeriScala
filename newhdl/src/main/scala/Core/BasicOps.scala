@@ -235,9 +235,9 @@ object HDLBase {
     override def getName = "Unsigned(" + value + ")"
   }
 
-  implicit def int2hdlboolreg(x: => Int) = new HDLReg[Boolean](
-    if (x != 0) true else false)
   implicit def any2hdl[T](x: => T): HDLReg[T] = new HDLReg[T](x)
+//  implicit def int2hdlboolreg(x: => Int) = new HDLReg[Boolean](
+//    if (x != 0) true else false)
   implicit def list2hdlvaluelist[T](x: List[T]): HDLValueList[T] =
     HDLValueList(x.map(any2hdl(_)))
 
@@ -274,7 +274,8 @@ object HDLBase {
   }
 
   abstract class HDLExp[+T] {
-    def is[S >: T](other: HDLExp[S]) = HDLEquals[S](this, other)
+    def is[S >: T](other: HDLExp[S]) =
+      HDLEquals[S](this, other)
 
     def unary_~[S >: T] = HDLRev[S](this)
 
@@ -556,6 +557,7 @@ object HDLBase {
       case HDLNormalCondition(c, f) =>
         getSenslist(c) ++ getSenslist(f)
       case HDLBooleanCondition(_, f) => getSenslist(f)
+      case HDLEquals(l, r) => getSenslist(l) ++ getSenslist(r)
       case HDLAssign(_, rhs) => getSenslist(rhs)
       case r: HDLReg[Any] => if (!r.isConst) Seq(r) else Seq()
       case HDLRev(x) => getSenslist(x)
@@ -667,11 +669,18 @@ object HDLBase {
     protected def compile[T](exp: HDLExp[T]): String = exp match {
       case HDLWhen(conditions) =>
         conditions.reverse.map(compile(_)).mkString("\nelse ")
-      case HDLNormalCondition(c, f) =>
-        "if (" + compile(c) + " == 1) begin\n" +
-        f.map(compile(_)).mkString("\n") + "\nend"
+      case HDLNormalCondition(c, f) => c match {
+        case r: HDLReg[Any] =>
+          "if (" + compile(c) + " == 1) begin\n" +
+          f.map(compile(_)).mkString("\n") + "\nend"
+        case _ =>
+          "if (" + compile(c) + ") begin\n" +
+          f.map(compile(_)).mkString("\n") + "\nend"
+      }
       case HDLBooleanCondition(b, f) if b =>
         "begin\n" + f.map(compile(_)).mkString("\n") + "\nend\n"
+      case HDLEquals(l, r) =>
+        compile(l) + " == " + compile(r)
       case HDLAssign(lhs, rhs) =>
         rhs match {
           case HDLValueListElem(lst, idx) =>

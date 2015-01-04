@@ -19,7 +19,7 @@ class FF(clk: HDL[Boolean], rst: HDL[Boolean],
 
 object Main {
   def main(args: Array[String]) {
-    println(new FF(0, 0, 0, 0).compile)
+    println(new FF(false, false, false, false).compile)
   }
 }
 
