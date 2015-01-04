@@ -168,6 +168,8 @@ object HDLBase {
 
   case class HDLDiv[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
 
+  case class HDLMod[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
+
   abstract class HDLType {
     def toRegisters: List[Register]
     def toRegisters(name: String): List[Register]
@@ -247,6 +249,12 @@ object HDLBase {
     expStack.push(lst)
     expStack
   }
+  def replaceLastExp(exp: HDLExp[Any]) = {
+    var lst = expStack.pop
+    lst = exp :: lst.tail
+    expStack.push(lst)
+    expStack
+  }
   def getExps = expStack.top.reverse
   def incExpLvl {
     expStack.push(List())
@@ -265,10 +273,15 @@ object HDLBase {
 
     def unary_~[S >: T] = HDLRev[S](this)
 
+    def +[S >: T](another: HDLExp[S]) = HDLAdd(this, another)
+    def -[S >: T](another: HDLExp[S]) = HDLSub(this, another)
+    def *[S >: T](another: HDLExp[S]) = HDLMul(this, another)
+    def /[S >: T](another: HDLExp[S]) = HDLDiv(this, another)
+    def %[S >: T](another: HDLExp[S]) = HDLMod(this, another)
+
     def &[S >: T](another: HDLExp[S]) = HDLBitwiseAnd(this, another)
     def |[S >: T](another: HDLExp[S]) = HDLBitwiseOr(this, another)
     def ^[S >: T](another: HDLExp[S]) = HDLBitwiseXor(this, another)
-
   }
 
   case class HDLAssign[T](lhs: HDLDef[T], rhs: HDLExp[T])
@@ -276,9 +289,15 @@ object HDLBase {
 
   case class HDLEquals[T](lhs: HDLExp[T], rhs: HDLExp[T]) extends HDLExp[Boolean]
 
-  case class HDLWhen[T](cond: HDLExp[Boolean],
-    suc: Seq[HDLExp[Any]], fal: Seq[HDLExp[Any]])
-      extends HDLExp[T]
+  abstract class HDLCondition[T] extends HDLExp[T]
+
+  case class HDLNormalCondition[T](cond: HDLExp[Boolean], f: Seq[HDLExp[T]])
+      extends HDLCondition[T]
+
+  case class HDLBooleanCondition[T](cond: Boolean, f: Seq[HDLExp[T]])
+      extends HDLCondition[T]
+
+  case class HDLWhen[T](conditions: Seq[HDLCondition[T]]) extends HDLExp[T]
 
   abstract class HDLDef[+T] extends HDLExp[T] {
     def :=[S >: T](rhs: HDLExp[S]) = {
@@ -524,20 +543,14 @@ object HDLBase {
   trait Base {
     // Arithmetic related.
 
-    implicit def hdlarithable2ha(x: HDL[Arithable]) = _HA(x)
-
-    case class _HA(nature: HDL[Arithable]) {
-      def +(another: _HA) = HDLAdd(nature, another.nature)
-      def -(another: _HA) = HDLSub(nature, another.nature)
-      def *(another: _HA) = HDLMul(nature, another.nature)
-      def /(another: _HA) = HDLDiv(nature, another.nature)
-    }
-
     def module(blocks: HDLBlock*): HDLModule = macro moduleImpl
 
     protected def getSenslist(exp: HDLExp[Any]): Seq[HDLReg[Any]] = exp match {
-      case HDLWhen(cond, suc, fal) =>
-        getSenslist(cond) ++ getSenslist(suc) ++ getSenslist(fal)
+      case HDLWhen(conditions) =>
+        conditions.map(getSenslist(_)).reduceLeft((l, r) => l ++ r)
+      case HDLNormalCondition(c, f) =>
+        getSenslist(c) ++ getSenslist(f)
+      case HDLBooleanCondition(_, f) => getSenslist(f)
       case HDLAssign(_, rhs) => getSenslist(rhs)
       case r: HDLReg[Any] => if (!r.isConst) Seq(r) else Seq()
       case HDLRev(x) => getSenslist(x)
@@ -596,18 +609,46 @@ object HDLBase {
 
     case class WhenPart1(cond: HDLExp[Boolean]) {
       def apply(exps: Unit*) = {
-        val p = WhenPart2(cond, getAndClearExps)
-        incExpLvl
+        val p = new WhenPart2(cond, getAndClearExps)
         p
       }
     }
 
-    case class WhenPart2(cond: HDLExp[Boolean], suc: List[HDLExp[Any]]) {
-      def otherwise(exps: Unit*) = {
-        val fal = getAndClearExps
-        val w = HDLWhen(cond, suc, fal)
-        addExp(w)
-        w
+    class WhenPart2(cond: HDLExp[Boolean], suc: List[HDLExp[Any]]) {
+
+      addExp(HDLWhen(List(HDLNormalCondition(cond, suc))))
+
+      object HDLOtherwise {
+        def apply(exps: Unit*) = {
+          val fal = getAndClearExps
+          conditions = HDLBooleanCondition(true, fal) :: conditions
+          val w = HDLWhen(conditions)
+          replaceLastExp(w)
+          w
+        }
+      }
+
+      object HDLElsewhen {
+        def apply(cond: HDLExp[Boolean])(exps: Unit*) = {
+          val oth = getAndClearExps
+          conditions = HDLNormalCondition(cond, oth) :: conditions
+          val w = HDLWhen(conditions)
+          replaceLastExp(w)
+          w
+        }
+      }
+
+      private var conditions: List[HDLCondition[Any]] =
+        List(HDLNormalCondition(cond, suc))
+
+      def otherwise = {
+        incExpLvl
+        HDLOtherwise
+      }
+
+      def elsewhen = {
+        incExpLvl
+        HDLElsewhen
       }
     }
   }
@@ -622,20 +663,20 @@ object HDLBase {
       (for (module <- toCompile) yield compile(module)).mkString("")
 
     protected def compile[T](exp: HDLExp[T]): String = exp match {
-      case HDLWhen(cond, suc, fal) =>
-        val c = cond match {
-          case cr: HDLReg[T] => compile(cr) + " == 1"
-          case _ => compile(cond)
-        }
-        "if (" + c + ") begin\n" + suc.map(compile(_)).mkString(";\n") +
-        "\nend\nelse begin\n" + fal.map(compile(_)).mkString(";\n") + "\nend\n"
+      case HDLWhen(conditions) =>
+        conditions.reverse.map(compile(_)).mkString("\nelse ")
+      case HDLNormalCondition(c, f) =>
+        "if (" + compile(c) + " == 1) begin\n" +
+        f.map(compile(_)).mkString("\n") + "\nend"
+      case HDLBooleanCondition(b, f) if b =>
+        "begin\n" + f.map(compile(_)).mkString("\n") + "\nend\n"
       case HDLAssign(lhs, rhs) =>
         rhs match {
           case HDLValueListElem(lst, idx) =>
             val l = lst.lst
             val s = (0 until l.length).map(i =>
               List(i, ": ", compile(lhs),
-                " <= ", compile(l(i))).mkString).mkString("\n")
+                " <= ", compile(l(i)), ";").mkString).mkString("\n")
             "case (" + idx.getName + ")\n" + s + "\nendcase\n"
           case _ =>
             compile(lhs) + " <= " + compile(rhs) + ";"

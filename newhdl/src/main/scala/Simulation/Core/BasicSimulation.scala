@@ -218,14 +218,24 @@ trait SimulationBase {
 }
 
 trait BasicSimulations extends SimulationBase {
+  // TODO: change List[Int] to an abstract class?
   override def exec[T](exp: HDLExp[T]): List[Int] = {
     exp match {
-      case HDLWhen(cond, suc, fal) =>
-        val c = cond match {
-          case cr: HDLReg[T] => cr.value > 1
+      case HDLWhen(conditions) =>
+        var res: List[Int] = List()
+        conditions.exists { cond =>
+          cond match {
+            case HDLNormalCondition(c, f) if (exec(c)(0) > 0)=>
+              res = f.flatMap(exec(_)).toList
+              true
+            case HDLBooleanCondition(b, f) if (b) =>
+              res = f.flatMap(exec(_)).toList
+              true
+            case _ =>
+              false
+          }
         }
-        if (c) suc.flatMap(exec(_)).toList
-        else fal.flatMap(exec(_)).toList
+        res
       case HDLAssign(lhs, rhs) =>
         val res = exec(rhs)
         lhs match {
