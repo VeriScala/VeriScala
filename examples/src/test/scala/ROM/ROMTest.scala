@@ -5,7 +5,7 @@ import NewHDL.Core.HDLBase._
 import NewHDL.Simulation.Core.SimulationSuite
 
 class ROMTestBench[T](clk: HDL[Boolean], addr: HDL[Unsigned],
-  dout: HDL[T], data: HDLValueList[T], addrs: Iterator[Unsigned])
+  dout: HDL[T], data: List[T], addrs: Iterator[Unsigned])
     extends ROM(clk, addr, dout, data) with SimulationSuite {
 
   def bench = module (
