@@ -703,6 +703,8 @@ object HDLBase {
           case _ =>
             compile(lhs) + " <= " + compile(rhs) + ";"
         }
+      case HDLRev(x) =>
+        "~" + compile(x)
       case HDLAdd(x, y) =>
         compile(x) + " + " + compile(y)
       case HDLSub(x, y) =>
