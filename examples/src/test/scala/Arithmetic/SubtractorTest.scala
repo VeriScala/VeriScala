@@ -14,7 +14,7 @@ class SubtractorTestBench[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
     },
 
     sync(clk, 0) {
-      rst := 0
+      rst := b0
       a := A.next()
       b := B.next()
     })
@@ -32,7 +32,7 @@ class SubTest extends FunSuite {
   test("test sub") {
     val clk = HDL(false)
     val z = HDL(Unsigned(0, 5))
-    val bench = new SubtractorTestBench(clk, 0,
+    val bench = new SubtractorTestBench(clk, false,
       Unsigned(0, 4), Unsigned(0, 4), z, A, B)
     bench since 0 until 14 every 2 run {
       assert(clk === 0)

@@ -28,7 +28,7 @@ class Bin2GrayTest extends FunSuite {
   test("test bin2gray") {
     val clk = HDL(false)
     val g = HDL(Unsigned(0, width))
-    val bench = new Bin2GrayTestBench(clk, 0,
+    val bench = new Bin2GrayTestBench(clk, false,
       g, Unsigned(0, width), width, B)
     bench since 0 until 10 every 2 run {
       assert(clk === 0)

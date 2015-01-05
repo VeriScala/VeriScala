@@ -12,6 +12,9 @@ import NewHDL.Simulation.Core.Waiter
 
 object HDLBase {
 
+  val b0 = false
+  val b1 = true
+
   type HDL[T] = HDLReg[T]
   def HDL[T](x: T) = new HDLReg[T](x)
 
@@ -236,8 +239,8 @@ object HDLBase {
   }
 
   implicit def any2hdl[T](x: => T): HDLReg[T] = new HDLReg[T](x)
-//  implicit def int2hdlboolreg(x: => Int) = new HDLReg[Boolean](
-//    if (x != 0) true else false)
+  implicit def int2hdlsigned(x: => Int) = new HDLReg(Signed(x,
+    HDLPrimitive.getSignedSize(x)))
   implicit def list2hdlvaluelist[T](x: List[T]): HDLValueList[T] =
     HDLValueList(x.map(any2hdl(_)))
 
@@ -315,7 +318,8 @@ object HDLBase {
     def registers: List[Register]
   }
 
-  class HDLReg[+T](_value: => T) extends HDLDef[T] {
+  class HDLReg[+T](_value: => T)
+      extends HDLDef[T] {
 
     var name: Option[String] = None
     var out: Boolean = false
@@ -370,7 +374,8 @@ object HDLBase {
 
     def apply[S >: T](hi: Int, lo: Int): HDLSlice[S] = HDLSlice[S](this, hi, lo)
 
-    def apply[S >: T](idx: HDLReg[Unsigned]): HDLListElem[S] = HDLListElem(this, idx)
+    def apply[S >: T](idx: HDLReg[Unsigned]): HDLListElem[S] =
+      HDLListElem(this, idx)
 
     override def toString = "HDLReg " + getName
 

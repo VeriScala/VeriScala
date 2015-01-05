@@ -14,7 +14,7 @@ class AdderTestBench[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
     },
 
     sync(clk, 0) {
-      rst := 0
+      rst := b0
       a := A.next()
       b := B.next()
     })
@@ -32,7 +32,7 @@ class AdderTest extends FunSuite {
   test("test adder") {
     val clk = HDL(false)
     val z = HDL(Unsigned(0, 5))
-    val bench = new AdderTestBench(clk, 0,
+    val bench = new AdderTestBench(clk, false,
       Unsigned(0, 4), Unsigned(0, 4), z, A, B)
     bench since 0 until 10 every 2 run {
       assert(clk === 0)

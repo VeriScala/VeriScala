@@ -14,7 +14,7 @@ class XorTestBench[T](clk: HDL[Boolean], rst: HDL[Boolean],
     },
 
     sync(clk, 0) {
-      rst := 0
+      rst := b0
       a := A.next()
       b := B.next()
     })
@@ -34,7 +34,8 @@ class XorTest extends FunSuite {
   test("test xor") {
     val clk = HDL(false)
     val z = HDL(false)
-    val bench = new XorTestBench[Boolean](clk, 0, 0, 0, z, A, B)
+    val bench = new XorTestBench[Boolean](clk, false,
+      false, false, z, A, B)
     bench since 0 until 10 every 2 run {
       assert(clk === 0)
     }

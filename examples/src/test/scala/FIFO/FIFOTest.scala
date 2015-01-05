@@ -33,7 +33,7 @@ class FIFOTest extends FunSuite {
     val clk = HDL(false)
     val input = HDL(Unsigned(0, width))
     val output = HDL(Unsigned(0, width))
-    val bench = new FIFOTestBench(clk, 0,
+    val bench = new FIFOTestBench(clk, false,
       input, output, width, depth, Unsigned(0, width), inputs)
     bench since 0 until 16 every 2 run {
       assert(clk === 0)

@@ -2,7 +2,7 @@ package NewHDLExample.FSM.Moore
 
 import NewHDL.Core.HDLBase._
 
-class Moore[T](clk: HDL[Boolean], rst: HDL[Boolean],
+class Moore(clk: HDL[Boolean], rst: HDL[Boolean],
   cars_green: HDL[Boolean], cars_yellow: HDL[Boolean], cars_red: HDL[Boolean],
   ppl_green: HDL[Boolean], ppl_yellow: HDL[Boolean], ppl_red: HDL[Boolean],
   timerStep: Int)
@@ -49,40 +49,40 @@ class Moore[T](clk: HDL[Boolean], rst: HDL[Boolean],
 
     async {
       when (state_traffic is cars_go.id) {
-        cars_green := 1
-        cars_yellow := 0
-        cars_red := 0
-        ppl_green := 0
-        ppl_yellow := 0
-        ppl_red := 1
+        cars_green := b1
+        cars_yellow := b0
+        cars_red := b0
+        ppl_green := b0
+        ppl_yellow := b0
+        ppl_red := b1
       } .elsewhen (state_traffic is cars_stop.id) {
-        cars_green := 0
-        cars_yellow := 1
-        cars_red := 0
-        ppl_green := 0
-        ppl_yellow := 0
-        ppl_red := 1
+        cars_green := b0
+        cars_yellow := b1
+        cars_red := b0
+        ppl_green := b0
+        ppl_yellow := b0
+        ppl_red := b1
       } .elsewhen (state_traffic is people_go.id) {
-        cars_green := 0
-        cars_yellow := 0
-        cars_red := 1
-        ppl_green := 1
-        ppl_yellow := 0
-        ppl_red := 0
+        cars_green := b0
+        cars_yellow := b0
+        cars_red := b1
+        ppl_green := b1
+        ppl_yellow := b0
+        ppl_red := b0
       } .elsewhen (state_traffic is people_stop.id) {
-        cars_green := 0
-        cars_yellow := 0
-        cars_red := 1
-        ppl_green := 0
-        ppl_yellow := 1
-        ppl_red := 0
+        cars_green := b0
+        cars_yellow := b0
+        cars_red := b1
+        ppl_green := b0
+        ppl_yellow := b1
+        ppl_red := b0
       } .otherwise {
-        cars_green := 0
-        cars_yellow := 0
-        cars_red := 1
-        ppl_green := 0
-        ppl_yellow := 0
-        ppl_red := 1
+        cars_green := b0
+        cars_yellow := b0
+        cars_red := b1
+        ppl_green := b0
+        ppl_yellow := b0
+        ppl_red := b1
       }
     }
   }
