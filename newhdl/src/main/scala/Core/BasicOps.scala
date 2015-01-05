@@ -475,10 +475,13 @@ object HDLBase {
     def params = _params
 
     def setBlocks(blocks: List[HDLBlock]) {
-      _blocks = blocks
     }
 
-    def blocks = _blocks
+    def blocks = _blocks.reverse
+
+    def addBlock(block: HDLBlock) {
+      _blocks = block :: _blocks
+    }
   }
 
   def moduleImpl(c: Context)(blocks: c.Expr[HDLBlock]*):
@@ -582,8 +585,11 @@ object HDLBase {
     }
 
     case class HDLSyncPart(clk: HDLReg[Boolean], when: Int) {
-      def apply(exps: HDLExp[Any]*) =
-        HDLSyncBlock(clk, when, getAndClearExps)
+      def apply(exps: HDLExp[Any]*) = {
+        val block = HDLSyncBlock(clk, when, getAndClearExps)
+        currentMod.value.addBlock(block)
+        block
+      }
     }
 
     def async = {
@@ -595,7 +601,9 @@ object HDLBase {
       def apply(exps: HDLExp[Any]*) = {
         val exps = getAndClearExps
         val senslist = getSenslist(exps).distinct
-        HDLAsyncBlock(senslist, exps)
+        val block = HDLAsyncBlock(senslist, exps)
+        currentMod.value.addBlock(block)
+        block
       }
     }
 
@@ -605,8 +613,11 @@ object HDLBase {
     }
 
     case class HDLDelayPart(duration: Int) {
-      def apply(exps: HDLExp[Any]*) =
-        HDLDelayBlock(duration, getAndClearExps)
+      def apply(exps: HDLExp[Any]*) = {
+        val block = HDLDelayBlock(duration, getAndClearExps)
+        currentMod.value.addBlock(block)
+        block
+      }
     }
 
     def when(cond: HDLExp[Boolean]) = {
@@ -700,6 +711,8 @@ object HDLBase {
         compile(x) + " * " + compile(y)
       case HDLDiv(x, y) =>
         compile(x) + " / " + compile(y)
+      case HDLMod(x, y) =>
+        compile(x) + " % " + compile(y)
       case HDLBitwiseAnd(x, y) =>
         compile(x) + " & " + compile(y)
       case HDLBitwiseOr(x, y) =>
