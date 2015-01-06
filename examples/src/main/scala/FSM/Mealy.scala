@@ -15,7 +15,7 @@ class Mealy[T](clk: HDL[Boolean], rst: HDL[Boolean],
   ppl_green: HDL[Boolean], ppl_yellow: HDL[Boolean], ppl_red: HDL[Boolean])
     extends HDLClass {
   def mealy = module {
-    val state_traffic = HDLlize(false)
+    val state_traffic = HDLlize(b0)
 
     sync(clk, 1) {
       when (rst) {
@@ -66,9 +66,9 @@ class Mealy[T](clk: HDL[Boolean], rst: HDL[Boolean],
 
 object Main {
   def main(args: Array[String]) {
-    println(new Mealy(false, false,
-      false, false,
-      false, false, false,
-      false, false, false).compile)
+    println(new Mealy(b0, b0,
+      b0, b0,
+      b0, b0, b0,
+      b0, b0, b0).compile)
   }
 }
