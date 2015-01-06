@@ -286,6 +286,22 @@ trait BasicSimulations extends SimulationBase {
         val p = exec(x).zip(exec(y))
         val r = p.map(tuple => tuple._1 ^ tuple._2)
         r
+      case HDLGreaterThan(x, y) =>
+        val p = exec(x).zip(exec(y))
+        val r = p.map(tuple => tuple._1 > tuple._2).map(b => if (b) 1 else 0)
+        r
+      case HDLLessThan(x, y) =>
+        val p = exec(x).zip(exec(y))
+        val r = p.map(tuple => tuple._1 < tuple._2).map(b => if (b) 1 else 0)
+        r
+      case HDLGreaterThanOrEqual(x, y) =>
+        val p = exec(x).zip(exec(y))
+        val r = p.map(tuple => tuple._1 >= tuple._2).map(b => if (b) 1 else 0)
+        r
+      case HDLLessThanOrEqual(x, y) =>
+        val p = exec(x).zip(exec(y))
+        val r = p.map(tuple => tuple._1 <= tuple._2).map(b => if (b) 1 else 0)
+        r
       case HDLIndex(obj, idx) =>
         exec(obj).map(x => (x >> idx) & 1).toList
       case HDLValueListElem(lst, idx) =>

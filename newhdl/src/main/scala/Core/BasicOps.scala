@@ -173,6 +173,16 @@ object HDLBase {
 
   case class HDLMod[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
 
+  case class HDLGreaterThan[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[Boolean]
+
+  case class HDLLessThan[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[Boolean]
+
+  case class HDLGreaterThanOrEqual[T](a: HDLExp[T], b: HDLExp[T])
+      extends HDLExp[Boolean]
+
+  case class HDLLessThanOrEqual[T](a: HDLExp[T], b: HDLExp[T])
+      extends HDLExp[Boolean]
+
   abstract class HDLType {
     def toRegisters: List[Register]
     def toRegisters(name: String): List[Register]
@@ -291,6 +301,11 @@ object HDLBase {
     def &[S >: T](another: HDLExp[S]) = HDLBitwiseAnd(this, another)
     def |[S >: T](another: HDLExp[S]) = HDLBitwiseOr(this, another)
     def ^[S >: T](another: HDLExp[S]) = HDLBitwiseXor(this, another)
+
+    def >[S >: T](another: HDLExp[S]) = HDLGreaterThan(this, another)
+    def <[S >: T](another: HDLExp[S]) = HDLLessThan(this, another)
+    def >=[S >: T](another: HDLExp[S]) = HDLGreaterThanOrEqual(this, another)
+    def <=[S >: T](another: HDLExp[S]) = HDLLessThanOrEqual(this, another)
   }
 
   case class HDLAssign[T](lhs: HDLDef[T], rhs: HDLExp[T])
@@ -576,6 +591,10 @@ object HDLBase {
       case HDLBitwiseAnd(x, y) => getSenslist(x) ++ getSenslist(y)
       case HDLBitwiseOr(x, y) => getSenslist(x) ++ getSenslist(y)
       case HDLBitwiseXor(x, y) => getSenslist(x) ++ getSenslist(y)
+      case HDLGreaterThan(x, y) => getSenslist(x) ++ getSenslist(y)
+      case HDLLessThan(x, y) => getSenslist(x) ++ getSenslist(y)
+      case HDLGreaterThanOrEqual(x, y) => getSenslist(x) ++ getSenslist(y)
+      case HDLLessThanOrEqual(x, y) => getSenslist(x) ++ getSenslist(y)
       case HDLIndex(x, _) => getSenslist(x)
       case HDLSlice(x, _, _) => getSenslist(x)
     }
@@ -726,6 +745,14 @@ object HDLBase {
         compile(x) + " | " + compile(y)
       case HDLBitwiseXor(x, y) =>
         compile(x) + " ^ " + compile(y)
+      case HDLGreaterThan(x, y) =>
+        compile(x) + " > " + compile(y)
+      case HDLLessThan(x, y) =>
+        compile(x) + " < " + compile(y)
+      case HDLGreaterThanOrEqual(x, y) =>
+        compile(x) + " >= " + compile(y)
+      case HDLLessThanOrEqual(x, y) =>
+        compile(x) + " <= " + compile(y)
       case HDLIndex(x, idx) =>
         compile(x) + "[" + idx + "]"
       case HDLSlice(x, hi, lo) =>
