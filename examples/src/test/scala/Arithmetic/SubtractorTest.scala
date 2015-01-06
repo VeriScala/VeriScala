@@ -25,8 +25,8 @@ class SubtractorTestBench[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
 
 class SubTest extends FunSuite {
 
-  val A = List(0, 0, 1, 1, 15, 0, 15).map(Unsigned(_, 4)).iterator
-  val B = List(0, 1, 0, 1, 0, 15, 15).map(Unsigned(_, 4)).iterator
+  val A = List(0, 1, 1, 15, 0, 15, 15).map(Unsigned(_, 4)).iterator
+  val B = List(1, 0, 1, 0, 15, 15, 15).map(Unsigned(_, 4)).iterator
   val Z = List(0, 31, 1, 0, 15, 17, 0).iterator
 
   test("test sub") {

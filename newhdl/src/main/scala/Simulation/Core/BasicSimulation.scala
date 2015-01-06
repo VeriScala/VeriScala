@@ -125,7 +125,7 @@ trait SimulationBase {
         w.reg.registers map { register =>
           register.addWaiter(w, w.when)
         }
-        waiters = w :: waiters
+        //waiters = w :: waiters
       case a: HDLAsyncBlock =>
         val w = new AsyncWaiter(a)
         w.senslist map { hdlreg =>
@@ -223,7 +223,7 @@ trait BasicSimulations extends SimulationBase {
     exp match {
       case HDLWhen(conditions) =>
         var res: List[Int] = List()
-        conditions.exists { cond =>
+        conditions.reverse.exists { cond =>
           cond match {
             case HDLNormalCondition(c, f) if (exec(c)(0) > 0)=>
               res = f.flatMap(exec(_)).toList
@@ -236,6 +236,8 @@ trait BasicSimulations extends SimulationBase {
           }
         }
         res
+      case HDLEquals(lhs, rhs) =>
+        if (exec(lhs) == exec(rhs)) List(1) else List(0)
       case HDLAssign(lhs, rhs) =>
         val res = exec(rhs)
         lhs match {
@@ -267,6 +269,10 @@ trait BasicSimulations extends SimulationBase {
       case HDLDiv(x, y) =>
         val p = exec(x).zip(exec(y))
         val r = p.map(tuple => tuple._1 / tuple._2)
+        r
+      case HDLMod(x, y) =>
+        val p = exec(x).zip(exec(y))
+        val r = p.map(tuple => tuple._1 % tuple._2)
         r
       case HDLBitwiseAnd(x, y) =>
         val p = exec(x).zip(exec(y))

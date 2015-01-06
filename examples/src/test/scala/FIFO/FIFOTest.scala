@@ -26,7 +26,7 @@ class FIFOTestBench[T](clk: HDL[Boolean], rst: HDL[Boolean],
 class FIFOTest extends FunSuite {
   val width = 3
   val depth = 2
-  val inputs = List(0, 7, 0, 3, 0, 1, 0, 0).map(Unsigned(_, width)).iterator
+  val inputs = List(7, 0, 3, 0, 1, 0, 0).map(Unsigned(_, width)).iterator
   val outputs = List(0, 0, 0, 7, 0, 3, 0, 1).iterator
 
   test("test fifo") {

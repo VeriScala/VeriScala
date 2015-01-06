@@ -27,8 +27,8 @@ class OrTest extends FunSuite {
 
   implicit def int2bool(x: Int) = if (x > 0) true else false
 
-  val A = List(0, 0, 1, 1, 0).map(int2bool(_)).iterator
-  val B = List(0, 1, 0, 1, 0).map(int2bool(_)).iterator
+  val A = List(0, 1, 1, 0, 0).map(int2bool(_)).iterator
+  val B = List(1, 0, 1, 0, 0).map(int2bool(_)).iterator
   val Z = List(0, 1, 1, 1, 0).iterator
 
   test("test or") {
