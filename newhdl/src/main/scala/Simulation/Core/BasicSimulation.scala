@@ -203,7 +203,7 @@ trait SimulationBase {
   def continue(maxTime: Int) {
     if (!isStarted)
       throw SimulatorException("Simulator has not been started!")
-    doSimulation(maxTime)
+    doSimulation(currentTime + maxTime)
   }
 
   def stop {
