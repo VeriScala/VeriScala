@@ -15,6 +15,8 @@ object HDLBase {
   val b0 = false
   val b1 = true
 
+  def u(a: Int) = Unsigned(a, HDLPrimitive.getUnsignedSize(a))
+
   type HDL[T] = HDLReg[T]
   def HDL[T](x: T) = new HDLReg[T](x)
 
@@ -248,11 +250,11 @@ object HDLBase {
     override def getName = "Unsigned(" + value + ")"
   }
 
+  implicit def list2hdlvaluelist[T](x: List[T]): HDLValueList[T] =
+    HDLValueList(x.map(any2hdl(_)))
   implicit def any2hdl[T](x: => T): HDLReg[T] = new HDLReg[T](x)
   implicit def int2hdlsigned(x: => Int) = new HDLReg(Signed(x,
     HDLPrimitive.getSignedSize(x)))
-  implicit def list2hdlvaluelist[T](x: List[T]): HDLValueList[T] =
-    HDLValueList(x.map(any2hdl(_)))
 
   private var exps: List[HDLExp[Any]] = List()
   private val expStack: Stack[List[HDLExp[Any]]] = new Stack()
@@ -418,6 +420,7 @@ object HDLBase {
                 case p: HDLType => p.toRegisters
                 case b: Boolean => List(
                   new Register("", if (b) 1 else 0, 1, false))
+                case _ => List()
               }
               theReg
             case Some(nm) =>
@@ -425,6 +428,7 @@ object HDLBase {
                 case p: HDLType => p.toRegisters(nm)
                 case b: Boolean => List(
                   new Register(nm, if (b) 1 else 0, 1, false))
+                case _ => List()
               }
               corresRegs = Some(theReg)
               theReg
@@ -444,8 +448,6 @@ object HDLBase {
       extends HDLDef[T] {
     override def registers: List[Register] = lst.registers
   }
-
-
 
   abstract class HDLBlock(val exps: Seq[HDLExp[Any]])
 
@@ -488,11 +490,16 @@ object HDLBase {
       r
     }
 
-    def setParams(params: List[HDLReg[Any]]) {
-      _params = params
+    def setParams(params: List[Any]) {
+      params.map(param => param match {
+        case reg: HDLReg[Any] =>
+          _params = reg :: _params
+        case lst: List[HDLReg[Any]] =>
+          _params = lst.reverse ++ _params
+      })
     }
 
-    def params = _params
+    def params = _params.reverse
 
     def setBlocks(blocks: List[HDLBlock]) {
     }
@@ -507,13 +514,29 @@ object HDLBase {
   def moduleImpl(c: Context)(blocks: c.Expr[HDLBlock]*):
       c.Expr[HDLModule] = {
     import c.universe._
-
-    def constructModule(moduleName: Name, names: List[TermName]) = {
+    def constructModule(moduleName: Name, names: List[(TermName, Int)]) = {
       // set name for parameters
-      val l = names.map((name) =>
-        Apply(Select(
-          Ident(newTermName(name.toString)), newTermName("setName")),
-          List(Literal(Constant(name.toString)))))
+      val l = names.map(pair => {
+        val name = pair._1
+        val tpe = pair._2
+        if (tpe == 0) {
+          Apply(Select(
+            Ident(newTermName(name.toString)), newTermName("setName")),
+            List(Literal(Constant(name.toString))))
+        } else {
+          Apply(Select(
+            Apply(Select(Literal(Constant(0)), newTermName("until")),
+              List(Select(Ident(newTermName(name.toString)),
+                newTermName("size")))), newTermName("foreach")),
+            List(Function(List(ValDef(Modifiers(Flag.PARAM),
+              newTermName("i"), TypeTree(), EmptyTree)),
+              Apply(Select(
+                Apply(Select(Ident(newTermName(name.toString)),
+                  newTermName("apply")), List(Ident(newTermName("i")))),
+                newTermName("setName")),
+                List(Apply(Select(Literal(Constant(name.toString)),
+                  newTermName("$plus")), List(Ident(newTermName("i")))))))))
+        }})
       val r = Apply(Select(New(Ident(newTypeName("HDLModule"))),
         nme.CONSTRUCTOR),
         List(Literal(Constant(moduleName.decoded))))
@@ -521,7 +544,8 @@ object HDLBase {
       val d = ValDef(Modifiers(), mod, TypeTree(), r)
       val p = Apply(Select(Ident(mod), newTermName("setParams")),
         List(Apply(Select(Ident("List"), newTermName("apply")),
-          names.map(Ident(_)).toList)))
+          names.map(pair =>
+            Ident(pair._1)).toList)))
       val b = Apply(Select(Ident(mod), newTermName("setBlocks")),
         List(Apply(Select(Ident("List"), newTermName("apply")),
           blocks.map(_.tree).toList)))
@@ -534,7 +558,7 @@ object HDLBase {
     // in the future version of Scala!
     c.enclosingMethod match {
       case DefDef(_, moduleName, _, List(), _, _) =>
-        var names: List[TermName] = List()
+        var names: List[(TermName, Int)] = List()
         c.enclosingClass match {
           case ClassDef(_, className, _, Template(_, _, params)) =>
             params.map((param) => param match {
@@ -543,9 +567,18 @@ object HDLBase {
                   params(0).map(
                     (param) => param match {
                       case ValDef(_, name,
-                        AppliedTypeTree(Ident(typeName), _), _) =>
+                        AppliedTypeTree(Ident(typeName), inner), _) =>
+                        // 0 for HDL[T]
                         if (typeName == newTypeName("HDL"))
-                          names = name :: names
+                          names = (name, 0) :: names
+                        // 1 for List[HDL[T]]
+                        else if (typeName == newTypeName("List"))
+                          inner match {
+                            case List(AppliedTypeTree(Ident(typeName2), _)) =>
+                              if (typeName2 == newTypeName("HDL"))
+                                names = (name, 1) :: names
+                            case _ => ()
+                          }
                       case _ => ()
                     })
               case _ => ()
@@ -556,7 +589,7 @@ object HDLBase {
         val names = params(0).map((param) => param match {
           case ValDef(_, name, _, _) => name
         })
-        constructModule(moduleName, names)
+        constructModule(moduleName, names.map(name => (name, 0)))
       case _ =>
         c.Expr[HDLModule](
           Apply(Select(New(Ident(newTypeName("HDLModule"))),
@@ -730,7 +763,7 @@ object HDLBase {
       case HDLRev(x) =>
         "~" + compile(x)
       case HDLAdd(x, y) =>
-        compile(x) + " + " + compile(y)
+        "(" + compile(x) + " + " + compile(y) + ")"
       case HDLSub(x, y) =>
         compile(x) + " - " + compile(y)
       case HDLMul(x, y) =>
