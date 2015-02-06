@@ -175,6 +175,16 @@ object HDLBase {
 
   case class HDLMod[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
 
+  case class HDLLeftShift[+T](a: HDLExp[T], b: HDLExp[Unsigned])
+      extends HDLExp[T]
+
+  case class HDLRightShift[+T](a: HDLExp[T], b: HDLExp[Unsigned])
+      extends HDLExp[T]
+
+  case class HDLLeftShiftInt[+T](a: HDLExp[T], b: Int) extends HDLExp[T]
+
+  case class HDLRightShiftInt[+T](a: HDLExp[T], b: Int) extends HDLExp[T]
+
   case class HDLGreaterThan[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[Boolean]
 
   case class HDLLessThan[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[Boolean]
@@ -292,6 +302,9 @@ object HDLBase {
     def is[S >: T](other: HDLExp[S]) =
       HDLEquals[S](this, other)
 
+    def isnot[S >: T](other: HDLExp[S]) =
+      HDLNotEquals[S](this, other)
+
     def unary_~[S >: T] = HDLRev[S](this)
 
     def +[S >: T](another: HDLExp[S]) = HDLAdd(this, another)
@@ -304,6 +317,11 @@ object HDLBase {
     def |[S >: T](another: HDLExp[S]) = HDLBitwiseOr(this, another)
     def ^[S >: T](another: HDLExp[S]) = HDLBitwiseXor(this, another)
 
+    def >>(another: HDLExp[Unsigned]) = HDLRightShift(this, another)
+    def <<(another: HDLExp[Unsigned]) = HDLLeftShift(this, another)
+    def >>(another: Int) = HDLRightShiftInt(this, another)
+    def <<(another: Int) = HDLLeftShiftInt(this, another)
+
     def >[S >: T](another: HDLExp[S]) = HDLGreaterThan(this, another)
     def <[S >: T](another: HDLExp[S]) = HDLLessThan(this, another)
     def >=[S >: T](another: HDLExp[S]) = HDLGreaterThanOrEqual(this, another)
@@ -313,7 +331,11 @@ object HDLBase {
   case class HDLAssign[T](lhs: HDLDef[T], rhs: HDLExp[T])
       extends HDLExp[T]
 
-  case class HDLEquals[T](lhs: HDLExp[T], rhs: HDLExp[T]) extends HDLExp[Boolean]
+  case class HDLEquals[T](lhs: HDLExp[T], rhs: HDLExp[T])
+      extends HDLExp[Boolean]
+
+  case class HDLNotEquals[T](lhs: HDLExp[T], rhs: HDLExp[T])
+      extends HDLExp[Boolean]
 
   abstract class HDLCondition[T] extends HDLExp[T]
 
@@ -391,7 +413,7 @@ object HDLBase {
 
     def apply[S >: T](hi: Int, lo: Int): HDLSlice[S] = HDLSlice[S](this, hi, lo)
 
-    def apply[S >: T](idx: HDLReg[Unsigned]): HDLListElem[S] =
+    def apply[S >: T](idx: HDLExp[Unsigned]): HDLListElem[S] =
       HDLListElem(this, idx)
 
     override def toString = "HDLReg " + getName
@@ -444,7 +466,7 @@ object HDLBase {
     }
   }
 
-  case class HDLListElem[T](lst: HDLReg[T], idx: HDLReg[Unsigned])
+  case class HDLListElem[T](lst: HDLReg[T], idx: HDLExp[Unsigned])
       extends HDLDef[T] {
     override def registers: List[Register] = lst.registers
   }
@@ -614,6 +636,7 @@ object HDLBase {
         getSenslist(c) ++ getSenslist(f)
       case HDLBooleanCondition(_, f) => getSenslist(f)
       case HDLEquals(l, r) => getSenslist(l) ++ getSenslist(r)
+      case HDLNotEquals(l, r) => getSenslist(l) ++ getSenslist(r)
       case HDLAssign(_, rhs) => getSenslist(rhs)
       case r: HDLReg[Any] => if (!r.isConst) Seq(r) else Seq()
       case HDLRev(x) => getSenslist(x)
@@ -741,14 +764,18 @@ object HDLBase {
         case r: HDLReg[Any] =>
           "if (" + compile(c) + " == 1) begin\n" +
           f.map(compile(_)).mkString("\n") + "\nend"
-        case _ =>
+        case _ => {
+          println(c)
           "if (" + compile(c) + ") begin\n" +
           f.map(compile(_)).mkString("\n") + "\nend"
+        }
       }
       case HDLBooleanCondition(b, f) if b =>
         "begin\n" + f.map(compile(_)).mkString("\n") + "\nend\n"
       case HDLEquals(l, r) =>
         compile(l) + " == " + compile(r)
+      case HDLNotEquals(l, r) =>
+        compile(l) + " != " + compile(r)
       case HDLAssign(lhs, rhs) =>
         rhs match {
           case HDLValueListElem(lst, idx) =>
@@ -765,27 +792,35 @@ object HDLBase {
       case HDLAdd(x, y) =>
         "(" + compile(x) + " + " + compile(y) + ")"
       case HDLSub(x, y) =>
-        compile(x) + " - " + compile(y)
+        "(" + compile(x) + " - " + compile(y) + ")"
       case HDLMul(x, y) =>
-        compile(x) + " * " + compile(y)
+        "(" + compile(x) + " * " + compile(y) + ")"
       case HDLDiv(x, y) =>
-        compile(x) + " / " + compile(y)
+        "(" + compile(x) + " / " + compile(y) + ")"
       case HDLMod(x, y) =>
-        compile(x) + " % " + compile(y)
+        "(" + compile(x) + " % " + compile(y) + ")"
       case HDLBitwiseAnd(x, y) =>
-        compile(x) + " & " + compile(y)
+        "(" + compile(x) + " & " + compile(y) + ")"
       case HDLBitwiseOr(x, y) =>
-        compile(x) + " | " + compile(y)
+        "(" + compile(x) + " | " + compile(y) + ")"
       case HDLBitwiseXor(x, y) =>
-        compile(x) + " ^ " + compile(y)
+        "(" + compile(x) + " ^ " + compile(y) + ")"
       case HDLGreaterThan(x, y) =>
-        compile(x) + " > " + compile(y)
+        "(" + compile(x) + " > " + compile(y) + ")"
       case HDLLessThan(x, y) =>
-        compile(x) + " < " + compile(y)
+        "(" + compile(x) + " < " + compile(y) + ")"
       case HDLGreaterThanOrEqual(x, y) =>
-        compile(x) + " >= " + compile(y)
+        "(" + compile(x) + " >= " + compile(y) + ")"
       case HDLLessThanOrEqual(x, y) =>
-        compile(x) + " <= " + compile(y)
+        "(" + compile(x) + " <= " + compile(y) + ")"
+      case HDLLeftShift(x, y) =>
+        "(" + compile(x) + " << " + compile(y) + ")"
+      case HDLRightShift(x, y) =>
+        "(" + compile(x) + " >> " + compile(y) + ")"
+      case HDLLeftShiftInt(x, y) =>
+        "(" + compile(x) + " << " + y + ")"
+      case HDLRightShiftInt(x, y) =>
+        "(" + compile(x) + " >> " + y + ")"
       case HDLIndex(x, idx) =>
         compile(x) + "[" + idx + "]"
       case HDLSlice(x, hi, lo) =>

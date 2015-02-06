@@ -250,6 +250,8 @@ trait BasicSimulations extends SimulationBase {
               tempRegs = tempRegs + kv._1
               kv._1.setNext(kv._2)
             }
+          case lelt: HDLListElem[T] =>
+            lelt
         }
         res
       case HDLRev(x) =>
