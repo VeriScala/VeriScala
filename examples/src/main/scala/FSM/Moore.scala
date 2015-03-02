@@ -18,7 +18,7 @@ class Moore(clk: HDL[Boolean], rst: HDL[Boolean],
 
   def moore = module {
     val state_traffic = HDLlize(Unsigned(people_stop.id, 2))
-    val timer = HDLlize(Unsigned(1, timerStep1 + 1))
+    val timer = HDLlize(Unsigned(1, timerStep1))
 
     sync(clk, 1) {
       when (rst) {
@@ -29,7 +29,7 @@ class Moore(clk: HDL[Boolean], rst: HDL[Boolean],
           timer := 1
           state_traffic := people_go.id
         } .elsewhen (state_traffic is people_go.id) {
-          timer := (timer * 2) % math.pow(2, timerStep1).toInt
+          timer := (timer << 1) % math.pow(2, timerStep1).toInt
           when (timer(timerStep) is 1) {
             state_traffic := people_stop.id
           }
@@ -37,7 +37,7 @@ class Moore(clk: HDL[Boolean], rst: HDL[Boolean],
           timer := 1
           state_traffic := cars_go.id
         } .elsewhen (state_traffic is cars_go.id) {
-          timer := (timer * 2) % math.pow(2, timerStep1).toInt
+          timer := (timer << 1) % math.pow(2, timerStep1).toInt
           when (timer(timerStep) is 1) {
             state_traffic := cars_stop.id
           }

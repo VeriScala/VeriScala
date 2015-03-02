@@ -175,6 +175,8 @@ object HDLBase {
 
   case class HDLMod[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
 
+  case class HDLConcat[T](a: HDLExp[T], b: HDLExp[T]) extends HDLExp[T]
+
   case class HDLLeftShift[+T](a: HDLExp[T], b: HDLExp[Unsigned])
       extends HDLExp[T]
 
@@ -312,6 +314,7 @@ object HDLBase {
     def *[S >: T](another: HDLExp[S]) = HDLMul(this, another)
     def /[S >: T](another: HDLExp[S]) = HDLDiv(this, another)
     def %[S >: T](another: HDLExp[S]) = HDLMod(this, another)
+    def ~~[S >: T](another: HDLExp[S]) = HDLConcat(this, another)
 
     def &[S >: T](another: HDLExp[S]) = HDLBitwiseAnd(this, another)
     def |[S >: T](another: HDLExp[S]) = HDLBitwiseOr(this, another)
@@ -411,7 +414,7 @@ object HDLBase {
 
     def apply[S >: T](idx: Int): HDLIndex[S] = HDLIndex[S](this, idx)
 
-    def apply[S >: T](hi: Int, lo: Int): HDLSlice[S] = HDLSlice[S](this, hi, lo)
+    def apply[S >: T](lo: Int, hi: Int): HDLSlice[S] = HDLSlice[S](this, hi, lo)
 
     def apply[S >: T](idx: HDLExp[Unsigned]): HDLListElem[S] =
       HDLListElem(this, idx)
@@ -651,6 +654,7 @@ object HDLBase {
       case HDLLessThan(x, y) => getSenslist(x) ++ getSenslist(y)
       case HDLGreaterThanOrEqual(x, y) => getSenslist(x) ++ getSenslist(y)
       case HDLLessThanOrEqual(x, y) => getSenslist(x) ++ getSenslist(y)
+      case HDLConcat(x, y) => getSenslist(x) ++ getSenslist(y)
       case HDLIndex(x, _) => getSenslist(x)
       case HDLSlice(x, _, _) => getSenslist(x)
     }
@@ -821,6 +825,8 @@ object HDLBase {
         "(" + compile(x) + " << " + y + ")"
       case HDLRightShiftInt(x, y) =>
         "(" + compile(x) + " >> " + y + ")"
+      case HDLConcat(x, y) =>
+        "{" + compile(x) + "," + compile(y) + "}"
       case HDLIndex(x, idx) =>
         compile(x) + "[" + idx + "]"
       case HDLSlice(x, hi, lo) =>

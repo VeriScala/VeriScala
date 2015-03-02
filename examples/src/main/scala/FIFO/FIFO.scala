@@ -28,8 +28,8 @@ class FIFO[T](clk: HDL[Boolean], rst: HDL[Boolean],
 
 object Main {
   def main(args: Array[String]) {
-    val depth = 4
-    val width = 3
+    val depth = 5
+    val width = 6
     println(new FIFO(false, false,
       Unsigned(0, width), Unsigned(0, width),
       width, depth, Unsigned(0, width)).compile)

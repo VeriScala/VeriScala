@@ -3,13 +3,7 @@ package NewHDLExample.Sorting.BitonicSort
 import NewHDL.Core.HDLBase._
 
 class BitonicSort[T](clk: HDL[Boolean], rst: HDL[Boolean],
-  a0: HDL[T], a1: HDL[T], a2: HDL[T], a3: HDL[T],
-  a4: HDL[T], a5: HDL[T], a6: HDL[T], a7: HDL[T],
-  b0: HDL[T], b1: HDL[T], b2: HDL[T], b3: HDL[T],
-  b4: HDL[T], b5: HDL[T], b6: HDL[T], b7: HDL[T], init: T) extends HDLClass {
-
-  val a = List(a0, a1, a2, a3, a4, a5, a6, a7)
-  val b = List(b0, b1, b2, b3, b4, b5, b6, b7)
+  a: List[HDL[T]], b: List[HDL[T]], init: T) extends HDLClass {
 
   val DES = 0
   val ASC = 1
@@ -77,11 +71,9 @@ class BitonicSort[T](clk: HDL[Boolean], rst: HDL[Boolean],
 
 object Main {
   def main(args: Array[String]) {
-    println((new BitonicSort(b0, b1,
-      Unsigned(0, 4), Unsigned(0, 4), Unsigned(0, 4), Unsigned(0, 4),
-      Unsigned(0, 4), Unsigned(0, 4), Unsigned(0, 4), Unsigned(0, 4),
-      Unsigned(0, 4), Unsigned(0, 4), Unsigned(0, 4), Unsigned(0, 4),
-      Unsigned(0, 4), Unsigned(0, 4), Unsigned(0, 4), Unsigned(0, 4),
+    println((new BitonicSort[Unsigned](b0, b1,
+      (0 until 8).map(_ => HDL(Unsigned(0, 4))).toList,
+      (0 until 8).map(_ => HDL(Unsigned(0, 4))).toList,
       Unsigned(0, 4))).compile)
   }
 }

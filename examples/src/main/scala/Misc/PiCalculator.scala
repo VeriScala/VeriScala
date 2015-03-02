@@ -18,11 +18,9 @@ class Calc(clk: HDL[Boolean], rst: HDL[Boolean],
         }
         result := 0
       } .elsewhen (y <= d) {
-        var offset = 0
-        for (i <- 0 until count.size) {
-          val offset = d * i
-          val c = count(i)
-          when (x * x + (y + u(offset)) * (y + u(offset)) <= n * n) {
+        val cs = count.zipWithIndex
+        for ((c, i) <- cs; offset = u(i * d)) {
+          when (x * x + (y + offset) * (y + offset) <= n * n) {
             c := c + 1
           }
         }
@@ -43,10 +41,10 @@ class Calc(clk: HDL[Boolean], rst: HDL[Boolean],
 
 object Main {
   def main(args: Array[String]) {
-    val width = 10
+    val width = 32
     println((new Calc(b0, b0,
       Unsigned(0, width), Unsigned(0, width), Unsigned(0, width),
       List(Unsigned(0, width), Unsigned(0, width)),
-      math.pow(2, width).toInt)).compile)
+      math.pow(2, 11).toInt)).compile)
   }
 }
