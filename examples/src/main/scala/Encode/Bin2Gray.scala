@@ -2,7 +2,7 @@ package NewHDLExample.Encode
 
 import NewHDL.Core.HDLBase._
 
-class Bin2Gray[T <: Arithable](
+class Bin2Gray[T <: Arithable]( clk: HDL[Boolean], rst: HDL[Boolean],
   g: HDL[T], b: HDL[T], width: Int) extends HDLClass {
   def encode = module {
     async {
@@ -18,7 +18,7 @@ class Bin2Gray[T <: Arithable](
 object Main {
   def main(args: Array[String]) {
     val width = 3
-    println((new Bin2Gray(
+    println((new Bin2Gray(false, false,
       Unsigned(0, width + 1), Unsigned(0, width + 1), width)).compile)
   }
 }
