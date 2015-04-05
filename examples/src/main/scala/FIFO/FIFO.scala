@@ -30,8 +30,13 @@ object Main {
   def main(args: Array[String]) {
     val depth = 5
     val width = 6
-    println(new FIFO(false, false,
+    val handle_FIFO = new FIFO(false, false,
       Unsigned(0, width), Unsigned(0, width),
-      width, depth, Unsigned(0, width)).compile)
+      width, depth, Unsigned(0, width))
+    println(handle_FIFO.compile)
+
+    // 8081 is FPGA port, 8082 is ScalaHDL host port
+    handle_FIFO.network_debug_run("59.78.56.59", 8081, 8082)
   }
+
 }

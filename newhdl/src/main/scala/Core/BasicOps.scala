@@ -7,6 +7,9 @@ import scala.collection.mutable.Stack
 import scala.util.DynamicVariable
 import scala.math.pow
 
+import java.net.{DatagramPacket, DatagramSocket, InetAddress}
+import scala.annotation.tailrec
+
 import NewHDL.Exceptions.NotEnoughBitsException
 import NewHDL.Simulation.Core.Waiter
 
@@ -625,7 +628,7 @@ object HDLBase {
 
   abstract class HDLBaseClass
 
-  abstract class HDLClass extends HDLBaseClass with BasicOps with Compiler
+  abstract class HDLClass extends HDLBaseClass with BasicOps with Compiler with NetworkOps
 
   trait Base {
     // Arithmetic related.
@@ -878,4 +881,80 @@ object HDLBase {
         (for (block <- m.blocks) yield compile(block)).mkString("\n"))
     }
   }
+
+  trait NetworkOps {
+
+    var network_on_off: Boolean = true
+
+    // send about val and var
+    val network_send_max_byte: Int = 512
+    var network_send_ip = InetAddress.getByName("0.0.0.0")
+    var network_send_port = 0
+    val network_send_socket = new DatagramSocket()
+
+    // receive about val and var
+    val network_receive_buffer = new Array[Byte](512)
+    var network_receive_port = 8888
+    var network_receive_socket = new DatagramSocket(network_receive_port)
+
+
+    // send function
+    def network_send(message: String): Unit = {
+      val sub_message = if (message.length() > network_send_max_byte) message.substring(0, network_send_max_byte) else message
+      println(s"sending: $sub_message")
+      val network_send_buffer = sub_message.getBytes("utf-8")
+      val network_send_packet = new DatagramPacket(network_send_buffer, network_send_buffer.length, network_send_ip, network_send_port)
+      network_send_socket.send(network_send_packet)
+      if (sub_message != message) network_send(message.substring(network_send_max_byte))
+    }
+
+
+    // receive loop function
+    @tailrec
+    final def network_receive_loop(_socket: DatagramSocket, _receive_buffer: Array[Byte]) : Unit= {
+      val receive_packet = new DatagramPacket(_receive_buffer, _receive_buffer.length)
+      _socket.receive(receive_packet)
+      val receive_data = new String(receive_packet.getData, 0, receive_packet.getLength, "utf-8")
+      val sender_ip = receive_packet.getAddress
+      val sender_port = receive_packet.getPort
+      println(s"from: $sender_ip:$sender_port, message: $receive_data")
+
+      // new thread for handle function
+      new Thread(new Runnable {
+        def run() {
+          if (sender_ip != network_send_ip) {
+            println("***** Unlikelihood Message *****")
+          } else {
+            network_receive_handle(receive_data)
+          }
+        }
+      }).run()
+
+      network_receive_loop(_socket, _receive_buffer)
+    }
+
+
+    // receive handle function
+    def network_receive_handle(message: String) : Unit = {
+      println(s"handle $message")
+      // do some thing
+      if (message.equals("aaa"))
+        network_send("send by reiceive_handle")
+
+    }
+
+
+    def network_debug_run(_ip : String, _send_port : Int, _receive_port : Int) : Unit = {
+      if (network_on_off) {
+        network_send_ip = InetAddress.getByName(_ip)
+        network_send_port = _send_port
+        network_receive_port = _receive_port
+        network_receive_socket = new DatagramSocket(network_receive_port)
+        network_send("START by ScalaHDL")
+        network_receive_loop(network_receive_socket, network_receive_buffer)
+      }
+    }
+
+  }
+
 }
