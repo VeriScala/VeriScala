@@ -28,12 +28,13 @@ object Main {
  module FlipFlop (
  clk,
  rst,
- d,
  q,
+ d
  );
 
  input clk;
  input d;
+ input rst;
  output q;
  reg q;
 
