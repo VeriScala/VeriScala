@@ -9,8 +9,10 @@ import java.io.BufferedWriter
 import java.util.Date
 import java.util.Locale
 import java.text.SimpleDateFormat
+import java.net.{DatagramPacket, DatagramSocket, InetAddress}
 import math.pow
 
+import scala.annotation.tailrec
 import scala.collection.mutable.PriorityQueue
 
 
@@ -354,4 +356,80 @@ trait SimulationSchedule { this: SimulationBase =>
   }
 }
 
-trait SimulationSuite extends BasicSimulations with SimulationSchedule
+trait SimulationUDPCore {
+
+  var udpcore_on_off: Boolean = true
+
+  val udpcore_send_max_byte: Int = 512
+  var udpcore_send_ip = InetAddress.getByName("0.0.0.1")
+  var udpcore_send_port = 0
+  val udpcore_send_socket = new DatagramSocket()
+
+  // receive about val and var
+  val udpcore_receive_buffer = new Array[Byte](512)
+  var udpcore_receive_port = 15001
+  var udpcore_receive_socket = new DatagramSocket(udpcore_receive_port)
+
+
+  // those function will be called by other Simulator trait
+  // send function
+  def udpcore_send(message: String): Unit = {
+    val sub_message = if (message.length() > udpcore_send_max_byte) message.substring(0, udpcore_send_max_byte) else message
+    println(s"[Simulator] sending: $sub_message")
+    val udpcore_send_buffer = sub_message.getBytes("utf-8")
+    val udpcore_send_packet = new DatagramPacket(udpcore_send_buffer, udpcore_send_buffer.length, udpcore_send_ip, udpcore_send_port)
+    udpcore_send_socket.send(udpcore_send_packet)
+    if (sub_message != message) udpcore_send(message.substring(udpcore_send_max_byte))
+  }
+
+
+  // receive loop function
+  @tailrec
+  final def udpcore_receive_loop(_socket: DatagramSocket, _receive_buffer: Array[Byte]) : Unit= {
+    val receive_packet = new DatagramPacket(_receive_buffer, _receive_buffer.length)
+    _socket.receive(receive_packet) // loop block!
+    val receive_data = new String(receive_packet.getData, 0, receive_packet.getLength, "utf-8")
+    val sender_ip = receive_packet.getAddress
+    val sender_port = receive_packet.getPort
+    println(s"[Simulator] from: $sender_ip:$sender_port, message: $receive_data")
+
+    // new thread for handle function
+    new Thread(new Runnable {
+      def run() {
+        if (sender_ip != udpcore_send_ip) {
+          println("[Simulator] ***** Unlikelihood Message *****")
+        } else {
+          udpcore_receive_handle(receive_data)
+        }
+      }
+    }).run()
+
+    if (!receive_data.equals("CLOSE"))  // temp demo code
+      udpcore_receive_loop(_socket, _receive_buffer)
+    else
+      udpcore_send("CLOSE")
+  }
+
+
+  // receive handle function
+  def udpcore_receive_handle(message: String) : Unit = {
+    println(s"handle: $message")
+    // do some thing
+    if (message.equals("aaa"))
+      udpcore_send("[Simulator] send by reiceive_handle")
+
+  }
+
+
+  def udpcore_debug_run(_ip : String, _send_port : Int, _receive_port : Int) : Unit = {
+    if (udpcore_on_off) {
+      udpcore_send_ip = InetAddress.getByName(_ip)
+      udpcore_send_port = _send_port
+      udpcore_receive_port = _receive_port
+      udpcore_receive_socket = new DatagramSocket(udpcore_receive_port)
+      udpcore_receive_loop(udpcore_receive_socket, udpcore_receive_buffer)
+    }
+  }
+}
+
+trait SimulationSuite extends BasicSimulations with SimulationSchedule with SimulationUDPCore

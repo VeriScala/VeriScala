@@ -34,6 +34,28 @@ class AdderTest extends FunSuite {
     val z = HDL(Unsigned(0, 5))
     val bench = new AdderTestBench(clk, b0,
       Unsigned(0, 4), Unsigned(0, 4), z, A, B)
+
+
+    // open FPGA(Simulator) network host and client
+    // 8081 is FPGA(Simulator) port, 8082 is ScalaHDL(bench) host port
+    bench.udpcore_on_off = true
+    new Thread(new Runnable {
+      def run() {
+        bench.udpcore_debug_run("59.78.56.59", 8082, 8081)
+      }
+    }).run()
+
+
+    // open ScalaHDL network host and client
+    // 8081 is FPGA(Simulator) port, 8082 is ScalaHDL(bench) host port
+    bench.network_on_off = true
+    new Thread(new Runnable {
+      def run() {
+        bench.network_debug_run("59.78.56.59", 8081, 8082)
+      }
+    }).run()
+
+
     bench since 0 until 14 every 2 run {
       assert(clk === 0)
     }

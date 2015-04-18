@@ -894,14 +894,20 @@ object HDLBase {
 
     // receive about val and var
     val network_receive_buffer = new Array[Byte](512)
-    var network_receive_port = 8888
+    var network_receive_port = 15000
     var network_receive_socket = new DatagramSocket(network_receive_port)
+
+    // use for first connect overtime judge
+    // TODO: conside this case, not robust enough now
+    val network_connect_overtime = 10000
+    var network_connect_times = 0
+
 
 
     // send function
     def network_send(message: String): Unit = {
       val sub_message = if (message.length() > network_send_max_byte) message.substring(0, network_send_max_byte) else message
-      println(s"sending: $sub_message")
+      println(s"[ScalaHDL] sending: $sub_message")
       val network_send_buffer = sub_message.getBytes("utf-8")
       val network_send_packet = new DatagramPacket(network_send_buffer, network_send_buffer.length, network_send_ip, network_send_port)
       network_send_socket.send(network_send_packet)
@@ -913,24 +919,27 @@ object HDLBase {
     @tailrec
     final def network_receive_loop(_socket: DatagramSocket, _receive_buffer: Array[Byte]) : Unit= {
       val receive_packet = new DatagramPacket(_receive_buffer, _receive_buffer.length)
-      _socket.receive(receive_packet)
+      _socket.receive(receive_packet) // loop block!
       val receive_data = new String(receive_packet.getData, 0, receive_packet.getLength, "utf-8")
       val sender_ip = receive_packet.getAddress
       val sender_port = receive_packet.getPort
-      println(s"from: $sender_ip:$sender_port, message: $receive_data")
+      println(s"[ScalaHDL] from: $sender_ip:$sender_port, message: $receive_data")
 
       // new thread for handle function
       new Thread(new Runnable {
         def run() {
           if (sender_ip != network_send_ip) {
-            println("***** Unlikelihood Message *****")
+            println("[ScalaHDL] ***** Unlikelihood Message *****")
           } else {
             network_receive_handle(receive_data)
           }
         }
       }).run()
 
-      network_receive_loop(_socket, _receive_buffer)
+      if (!receive_data.equals("CLOSE"))  // temp demo code
+        network_receive_loop(_socket, _receive_buffer)
+      else
+        network_send("CLOSE")
     }
 
 
@@ -939,7 +948,7 @@ object HDLBase {
       println(s"handle: $message")
       // do some thing
       if (message.equals("aaa"))
-        network_send("send by reiceive_handle")
+        network_send("[ScalaHDL] send by reiceive_handle")
 
     }
 
