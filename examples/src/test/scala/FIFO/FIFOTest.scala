@@ -5,10 +5,10 @@ import NewHDL.Core.HDLBase._
 import NewHDL.Simulation.Core.SimulationSuite
 
 class FIFOTestBench[T](clk: HDL[Boolean], rst: HDL[Boolean],
-  input: HDL[T], output: HDL[T], width: Int, depth: Int, init: T,
-  inputs: Iterator[T])
-    extends FIFO[T](clk, rst, input, output, width, depth, init)
-    with SimulationSuite {
+                       input: HDL[T], output: HDL[T], width: Int, depth: Int, init: T,
+                       inputs: Iterator[T])
+  extends FIFO[T](clk, rst, input, output, width, depth, init)
+  with SimulationSuite {
 
   def bench = module (
     delay(1) {

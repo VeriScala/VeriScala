@@ -936,7 +936,7 @@ object HDLBase {
 
     // receive handle function
     def network_receive_handle(message: String) : Unit = {
-      println(s"handle $message")
+      println(s"handle: $message")
       // do some thing
       if (message.equals("aaa"))
         network_send("send by reiceive_handle")
