@@ -427,7 +427,7 @@ trait SimulationUDPCore {
       udpcore_send_port = _send_port
       udpcore_receive_port = _receive_port
       udpcore_receive_socket = new DatagramSocket(udpcore_receive_port)
-      udpcore_receive_loop(udpcore_receive_socket, udpcore_receive_buffer)
+      //udpcore_receive_loop(udpcore_receive_socket, udpcore_receive_buffer)
     }
   }
 }

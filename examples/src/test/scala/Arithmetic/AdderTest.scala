@@ -56,6 +56,9 @@ class AdderTest extends FunSuite {
     }).run()
 
 
+    bench.udpcore_send("CLOSE")
+
+
     bench since 0 until 14 every 2 run {
       assert(clk === 0)
     }
