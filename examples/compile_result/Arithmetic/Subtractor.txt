@@ -1,0 +1,47 @@
+class Subtractor[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
+  a: HDL[T], b: HDL[T], z: HDL[T]) extends HDLClass {
+  def sub = module {
+    sync(clk, 1) {
+      when (rst) {
+        z := 0
+      } .otherwise {
+        z := a - b
+      }
+    }
+  }
+
+  override val toCompile = List(sub)
+}
+
+
+
+module sub(
+clk,
+rst,
+a,
+b,
+z
+);
+
+input clk;
+input rst;
+input signed [4:0] a;
+input signed [4:0] b;
+output signed [5:0] z;
+reg signed [5:0] z;
+
+initial begin
+z = 0;
+end
+
+always @(posedge clk) begin
+if (rst == 1) begin
+z <= 0;
+end
+else begin
+z <= (a - b);
+end
+
+end
+
+endmodule

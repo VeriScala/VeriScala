@@ -1,0 +1,54 @@
+class And[T](clk: HDL[Boolean], rst: HDL[Boolean],
+  a: HDL[T], b: HDL[T], z: HDL[T]) extends HDLClass {
+  def and = module {
+    sync(clk, 1) {
+      when (rst) {
+        z := 0
+      } .otherwise {
+        z := a & b
+      }
+    }
+  }
+
+  override val toCompile = List(and)
+}
+
+object Main {
+  def main(args: Array[String]) {
+    println(new And(false, false, false, false, false).compile)
+  }
+}
+
+
+
+
+module and(
+clk,
+rst,
+a,
+b,
+z
+);
+
+input a;
+input b;
+input clk;
+input rst;
+output z;
+reg z;
+
+initial begin
+z = 0;
+end
+
+always @(posedge clk) begin
+if (rst == 1) begin
+z <= 0;
+end
+else begin
+z <= (a & b);
+end
+
+end
+
+endmodule

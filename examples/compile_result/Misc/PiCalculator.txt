@@ -1,0 +1,116 @@
+class Calc(clk: HDL[Boolean], rst: HDL[Boolean],
+  result: HDL[Unsigned], x: HDL[Unsigned], y: HDL[Unsigned],
+  count: List[HDL[Unsigned]], n: Int) extends HDLClass {
+
+  val d = n / count.size
+
+  def calc = module {
+    sync(clk, 1) {
+      when (rst) {
+        x := 1
+        y := 1
+        for (c <- count) {
+          c := 0
+        }
+        result := 0
+      } .elsewhen (y <= d) {
+        val cs = count.zipWithIndex
+        for ((c, i) <- cs; offset = u(i * d)) {
+          when (x * x + (y + offset) * (y + offset) <= n * n) {
+            c := c + 1
+          }
+        }
+        when (x == n) {
+          x := 1
+          y := y + 1
+        } .otherwise {
+          x := x + 1
+        }
+      } .otherwise {
+        result := count.foldLeft(HDLAdd(u(0), u(0)))((a, b) => a + b)
+      }
+    }
+  }
+
+  override val toCompile = List(calc)
+}
+
+object Main {
+  def main(args: Array[String]) {
+    val width = 32
+    println((new Calc(b0, b0,
+      Unsigned(0, width), Unsigned(0, width), Unsigned(0, width),
+      List(Unsigned(0, width), Unsigned(0, width)),
+      math.pow(2, 11).toInt)).compile)
+  }
+}
+
+
+
+
+
+HDLLessThanOrEqual(HDLReg y,HDLReg 1024)
+HDLLessThanOrEqual(HDLAdd(HDLMul(HDLReg x,HDLReg x),HDLMul(HDLAdd(HDLReg y,HDLReg 0),HDLAdd(HDLReg y,HDLReg 0))),HDLReg 4194304)
+HDLLessThanOrEqual(HDLAdd(HDLMul(HDLReg x,HDLReg x),HDLMul(HDLAdd(HDLReg y,HDLReg 1024),HDLAdd(HDLReg y,HDLReg 1024))),HDLReg 4194304)
+module calc(
+clk,
+rst,
+result,
+x,
+y,
+count0,
+count1
+);
+
+input clk;
+input rst;
+output [31:0] count0;
+output [31:0] count1;
+output [31:0] result;
+output [31:0] x;
+output [31:0] y;
+reg [31:0] count0;
+reg [31:0] count1;
+reg [31:0] result;
+reg [31:0] x;
+reg [31:0] y;
+
+initial begin
+count0 = 0;
+count1 = 0;
+result = 0;
+x = 0;
+y = 0;
+end
+
+always @(posedge clk) begin
+if (rst == 1) begin
+x <= 1;
+y <= 1;
+count0 <= 0;
+count1 <= 0;
+result <= 0;
+end
+else if ((y <= 1024)) begin
+if ((((x * x) + ((y + 0) * (y + 0))) <= 4194304)) begin
+count0 <= (count0 + 1);
+end
+if ((((x * x) + ((y + 1024) * (y + 1024))) <= 4194304)) begin
+count1 <= (count1 + 1);
+end
+if (0 == 1) begin
+x <= 1;
+y <= (y + 1);
+end
+else begin
+x <= (x + 1);
+end
+
+end
+else begin
+result <= (((0 + 0) + count0) + count1);
+end
+
+end
+
+endmodule

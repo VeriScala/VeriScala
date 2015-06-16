@@ -1,0 +1,51 @@
+module rom(
+clk,
+addr,
+dout
+);
+
+input [1:0] addr;
+input clk;
+output [2:0] dout;
+reg [2:0] dout;
+
+initial begin
+dout = 0;
+end
+
+always @(posedge clk) begin
+case (addr)
+0: dout <= 2;
+1: dout <= 3;
+2: dout <= 6;
+3: dout <= 7;
+endcase
+
+end
+
+endmodule
+
+
+
+
+class ROM[T](clk: HDL[Boolean], addr: HDL[Unsigned],
+  dout: HDL[T], data: List[T]) extends HDLClass {
+
+  def rom = module {
+    sync(clk, 1) {
+      dout := data(addr)
+    }
+  }
+
+  override val toCompile = List(rom)
+}
+
+object Main {
+  def main(args: Array[String]) {
+    val wl_addr = 2
+    val wl_data = 3
+    val data_list = List(2, 3, 6, 7).map(Unsigned(_, wl_data))
+    println(new ROM(false,
+      Unsigned(0, wl_addr), Unsigned(0, wl_data), data_list).compile)
+  }
+}

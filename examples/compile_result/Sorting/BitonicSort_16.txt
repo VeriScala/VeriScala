@@ -1,0 +1,1997 @@
+class BitonicSort[T](clk: HDL[Boolean], rst: HDL[Boolean],
+  a: List[HDL[T]], b: List[HDL[T]], init: T) extends HDLClass {
+
+  val DES = 0
+  val ASC = 1
+
+  def compare(a: HDL[T], b: HDL[T], x: HDL[T], y: HDL[T], dir: Int) {
+    async {
+      if (dir == ASC) {
+        when (a > b) {
+          x := b
+          y := a
+        } .otherwise {
+          x := a
+          y := b
+        }
+      } else {
+        when (a > b) {
+          x := a
+          y := b
+        } .otherwise {
+          x := b
+          y := a
+        }
+      }
+    }
+  }
+
+  def bitonicMerge(a: List[HDL[T]], b: List[HDL[T]], dir: Int): HDLBlock = {
+    val n = a.size
+    val k = n / 2
+    if (n > 1) {
+      val t = (for (i <- 0 until n) yield HDLlize(init)).toList
+      for (i <- 0 until k) {
+        compare(a(i), a(i + k), t(i), t(i + k), dir)
+      }
+      bitonicMerge(t.take(k), b.take(k), dir)
+      bitonicMerge(t.drop(k), b.drop(k), dir)
+    } else {
+      async {
+        b.head := a.head
+      }
+    }
+  }
+
+  def bitonicSort(a: List[HDL[T]], b: List[HDL[T]], dir: Int): HDLBlock = {
+    val n = a.size
+    val k = n / 2
+    if (n > 1) {
+      val t = (for (i <- 0 until n) yield HDLlize(init)).toList
+      bitonicSort(a.take(k), t.take(k), ASC)
+      bitonicSort(a.drop(k), t.drop(k), DES)
+      bitonicMerge(t, b, dir)
+    } else {
+      async {
+        b.head := a.head
+      }
+    }
+  }
+
+  def sort = module {
+    bitonicSort(a, b, ASC)
+  }
+
+  override val toCompile = List(sort)
+}
+
+object Main {
+  def main(args: Array[String]) {
+    println((new BitonicSort[Unsigned](b0, b1,
+      (0 until 16).map(_ => HDL(Unsigned(0, 16))).toList,
+      (0 until 16).map(_ => HDL(Unsigned(0, 16))).toList,
+      Unsigned(0, 8))).compile)
+  }
+}
+
+
+
+
+
+
+HDLGreaterThan(HDLReg temp28,HDLReg temp29)
+HDLGreaterThan(HDLReg temp32,HDLReg temp33)
+HDLGreaterThan(HDLReg temp24,HDLReg temp26)
+HDLGreaterThan(HDLReg temp25,HDLReg temp27)
+HDLGreaterThan(HDLReg temp36,HDLReg temp37)
+HDLGreaterThan(HDLReg temp38,HDLReg temp39)
+HDLGreaterThan(HDLReg temp48,HDLReg temp49)
+HDLGreaterThan(HDLReg temp52,HDLReg temp53)
+HDLGreaterThan(HDLReg temp44,HDLReg temp46)
+HDLGreaterThan(HDLReg temp45,HDLReg temp47)
+HDLGreaterThan(HDLReg temp56,HDLReg temp57)
+HDLGreaterThan(HDLReg temp58,HDLReg temp59)
+HDLGreaterThan(HDLReg temp16,HDLReg temp20)
+HDLGreaterThan(HDLReg temp17,HDLReg temp21)
+HDLGreaterThan(HDLReg temp18,HDLReg temp22)
+HDLGreaterThan(HDLReg temp19,HDLReg temp23)
+HDLGreaterThan(HDLReg temp64,HDLReg temp66)
+HDLGreaterThan(HDLReg temp65,HDLReg temp67)
+HDLGreaterThan(HDLReg temp72,HDLReg temp73)
+HDLGreaterThan(HDLReg temp74,HDLReg temp75)
+HDLGreaterThan(HDLReg temp68,HDLReg temp70)
+HDLGreaterThan(HDLReg temp69,HDLReg temp71)
+HDLGreaterThan(HDLReg temp80,HDLReg temp81)
+HDLGreaterThan(HDLReg temp82,HDLReg temp83)
+HDLGreaterThan(HDLReg temp100,HDLReg temp101)
+HDLGreaterThan(HDLReg temp104,HDLReg temp105)
+HDLGreaterThan(HDLReg temp96,HDLReg temp98)
+HDLGreaterThan(HDLReg temp97,HDLReg temp99)
+HDLGreaterThan(HDLReg temp108,HDLReg temp109)
+HDLGreaterThan(HDLReg temp110,HDLReg temp111)
+HDLGreaterThan(HDLReg temp120,HDLReg temp121)
+HDLGreaterThan(HDLReg temp124,HDLReg temp125)
+HDLGreaterThan(HDLReg temp116,HDLReg temp118)
+HDLGreaterThan(HDLReg temp117,HDLReg temp119)
+HDLGreaterThan(HDLReg temp128,HDLReg temp129)
+HDLGreaterThan(HDLReg temp130,HDLReg temp131)
+HDLGreaterThan(HDLReg temp88,HDLReg temp92)
+HDLGreaterThan(HDLReg temp89,HDLReg temp93)
+HDLGreaterThan(HDLReg temp90,HDLReg temp94)
+HDLGreaterThan(HDLReg temp91,HDLReg temp95)
+HDLGreaterThan(HDLReg temp136,HDLReg temp138)
+HDLGreaterThan(HDLReg temp137,HDLReg temp139)
+HDLGreaterThan(HDLReg temp144,HDLReg temp145)
+HDLGreaterThan(HDLReg temp146,HDLReg temp147)
+HDLGreaterThan(HDLReg temp140,HDLReg temp142)
+HDLGreaterThan(HDLReg temp141,HDLReg temp143)
+HDLGreaterThan(HDLReg temp152,HDLReg temp153)
+HDLGreaterThan(HDLReg temp154,HDLReg temp155)
+HDLGreaterThan(HDLReg temp0,HDLReg temp8)
+HDLGreaterThan(HDLReg temp1,HDLReg temp9)
+HDLGreaterThan(HDLReg temp2,HDLReg temp10)
+HDLGreaterThan(HDLReg temp3,HDLReg temp11)
+HDLGreaterThan(HDLReg temp4,HDLReg temp12)
+HDLGreaterThan(HDLReg temp5,HDLReg temp13)
+HDLGreaterThan(HDLReg temp6,HDLReg temp14)
+HDLGreaterThan(HDLReg temp7,HDLReg temp15)
+HDLGreaterThan(HDLReg temp160,HDLReg temp164)
+HDLGreaterThan(HDLReg temp161,HDLReg temp165)
+HDLGreaterThan(HDLReg temp162,HDLReg temp166)
+HDLGreaterThan(HDLReg temp163,HDLReg temp167)
+HDLGreaterThan(HDLReg temp176,HDLReg temp178)
+HDLGreaterThan(HDLReg temp177,HDLReg temp179)
+HDLGreaterThan(HDLReg temp184,HDLReg temp185)
+HDLGreaterThan(HDLReg temp186,HDLReg temp187)
+HDLGreaterThan(HDLReg temp180,HDLReg temp182)
+HDLGreaterThan(HDLReg temp181,HDLReg temp183)
+HDLGreaterThan(HDLReg temp192,HDLReg temp193)
+HDLGreaterThan(HDLReg temp194,HDLReg temp195)
+HDLGreaterThan(HDLReg temp168,HDLReg temp172)
+HDLGreaterThan(HDLReg temp169,HDLReg temp173)
+HDLGreaterThan(HDLReg temp170,HDLReg temp174)
+HDLGreaterThan(HDLReg temp171,HDLReg temp175)
+HDLGreaterThan(HDLReg temp200,HDLReg temp202)
+HDLGreaterThan(HDLReg temp201,HDLReg temp203)
+HDLGreaterThan(HDLReg temp208,HDLReg temp209)
+HDLGreaterThan(HDLReg temp210,HDLReg temp211)
+HDLGreaterThan(HDLReg temp204,HDLReg temp206)
+HDLGreaterThan(HDLReg temp205,HDLReg temp207)
+HDLGreaterThan(HDLReg temp216,HDLReg temp217)
+HDLGreaterThan(HDLReg temp218,HDLReg temp219)
+module sort(
+clk,
+rst,
+a0,
+a1,
+a2,
+a3,
+a4,
+a5,
+a6,
+a7,
+a8,
+a9,
+a10,
+a11,
+a12,
+a13,
+a14,
+a15,
+b0,
+b1,
+b2,
+b3,
+b4,
+b5,
+b6,
+b7,
+b8,
+b9,
+b10,
+b11,
+b12,
+b13,
+b14,
+b15
+);
+
+input [15:0] a0;
+input [15:0] a10;
+input [15:0] a11;
+input [15:0] a12;
+input [15:0] a13;
+input [15:0] a14;
+input [15:0] a15;
+input [15:0] a1;
+input [15:0] a2;
+input [15:0] a3;
+input [15:0] a4;
+input [15:0] a5;
+input [15:0] a6;
+input [15:0] a7;
+input [15:0] a8;
+input [15:0] a9;
+input clk;
+input rst;
+output [15:0] b0;
+output [15:0] b10;
+output [15:0] b11;
+output [15:0] b12;
+output [15:0] b13;
+output [15:0] b14;
+output [15:0] b15;
+output [15:0] b1;
+output [15:0] b2;
+output [15:0] b3;
+output [15:0] b4;
+output [15:0] b5;
+output [15:0] b6;
+output [15:0] b7;
+output [15:0] b8;
+output [15:0] b9;
+reg [15:0] b0;
+reg [15:0] b10;
+reg [15:0] b11;
+reg [15:0] b12;
+reg [15:0] b13;
+reg [15:0] b14;
+reg [15:0] b15;
+reg [15:0] b1;
+reg [15:0] b2;
+reg [15:0] b3;
+reg [15:0] b4;
+reg [15:0] b5;
+reg [15:0] b6;
+reg [15:0] b7;
+reg [15:0] b8;
+reg [15:0] b9;
+reg [7:0] temp0;
+reg [7:0] temp100;
+reg [7:0] temp101;
+reg [7:0] temp102;
+reg [7:0] temp103;
+reg [7:0] temp104;
+reg [7:0] temp105;
+reg [7:0] temp106;
+reg [7:0] temp107;
+reg [7:0] temp108;
+reg [7:0] temp109;
+reg [7:0] temp10;
+reg [7:0] temp110;
+reg [7:0] temp111;
+reg [7:0] temp112;
+reg [7:0] temp113;
+reg [7:0] temp114;
+reg [7:0] temp115;
+reg [7:0] temp116;
+reg [7:0] temp117;
+reg [7:0] temp118;
+reg [7:0] temp119;
+reg [7:0] temp11;
+reg [7:0] temp120;
+reg [7:0] temp121;
+reg [7:0] temp122;
+reg [7:0] temp123;
+reg [7:0] temp124;
+reg [7:0] temp125;
+reg [7:0] temp126;
+reg [7:0] temp127;
+reg [7:0] temp128;
+reg [7:0] temp129;
+reg [7:0] temp12;
+reg [7:0] temp130;
+reg [7:0] temp131;
+reg [7:0] temp132;
+reg [7:0] temp133;
+reg [7:0] temp134;
+reg [7:0] temp135;
+reg [7:0] temp136;
+reg [7:0] temp137;
+reg [7:0] temp138;
+reg [7:0] temp139;
+reg [7:0] temp13;
+reg [7:0] temp140;
+reg [7:0] temp141;
+reg [7:0] temp142;
+reg [7:0] temp143;
+reg [7:0] temp144;
+reg [7:0] temp145;
+reg [7:0] temp146;
+reg [7:0] temp147;
+reg [7:0] temp148;
+reg [7:0] temp149;
+reg [7:0] temp14;
+reg [7:0] temp150;
+reg [7:0] temp151;
+reg [7:0] temp152;
+reg [7:0] temp153;
+reg [7:0] temp154;
+reg [7:0] temp155;
+reg [7:0] temp156;
+reg [7:0] temp157;
+reg [7:0] temp158;
+reg [7:0] temp159;
+reg [7:0] temp15;
+reg [7:0] temp160;
+reg [7:0] temp161;
+reg [7:0] temp162;
+reg [7:0] temp163;
+reg [7:0] temp164;
+reg [7:0] temp165;
+reg [7:0] temp166;
+reg [7:0] temp167;
+reg [7:0] temp168;
+reg [7:0] temp169;
+reg [7:0] temp16;
+reg [7:0] temp170;
+reg [7:0] temp171;
+reg [7:0] temp172;
+reg [7:0] temp173;
+reg [7:0] temp174;
+reg [7:0] temp175;
+reg [7:0] temp176;
+reg [7:0] temp177;
+reg [7:0] temp178;
+reg [7:0] temp179;
+reg [7:0] temp17;
+reg [7:0] temp180;
+reg [7:0] temp181;
+reg [7:0] temp182;
+reg [7:0] temp183;
+reg [7:0] temp184;
+reg [7:0] temp185;
+reg [7:0] temp186;
+reg [7:0] temp187;
+reg [7:0] temp188;
+reg [7:0] temp189;
+reg [7:0] temp18;
+reg [7:0] temp190;
+reg [7:0] temp191;
+reg [7:0] temp192;
+reg [7:0] temp193;
+reg [7:0] temp194;
+reg [7:0] temp195;
+reg [7:0] temp196;
+reg [7:0] temp197;
+reg [7:0] temp198;
+reg [7:0] temp199;
+reg [7:0] temp19;
+reg [7:0] temp1;
+reg [7:0] temp200;
+reg [7:0] temp201;
+reg [7:0] temp202;
+reg [7:0] temp203;
+reg [7:0] temp204;
+reg [7:0] temp205;
+reg [7:0] temp206;
+reg [7:0] temp207;
+reg [7:0] temp208;
+reg [7:0] temp209;
+reg [7:0] temp20;
+reg [7:0] temp210;
+reg [7:0] temp211;
+reg [7:0] temp212;
+reg [7:0] temp213;
+reg [7:0] temp214;
+reg [7:0] temp215;
+reg [7:0] temp216;
+reg [7:0] temp217;
+reg [7:0] temp218;
+reg [7:0] temp219;
+reg [7:0] temp21;
+reg [7:0] temp220;
+reg [7:0] temp221;
+reg [7:0] temp222;
+reg [7:0] temp223;
+reg [7:0] temp22;
+reg [7:0] temp23;
+reg [7:0] temp24;
+reg [7:0] temp25;
+reg [7:0] temp26;
+reg [7:0] temp27;
+reg [7:0] temp28;
+reg [7:0] temp29;
+reg [7:0] temp2;
+reg [7:0] temp30;
+reg [7:0] temp31;
+reg [7:0] temp32;
+reg [7:0] temp33;
+reg [7:0] temp34;
+reg [7:0] temp35;
+reg [7:0] temp36;
+reg [7:0] temp37;
+reg [7:0] temp38;
+reg [7:0] temp39;
+reg [7:0] temp3;
+reg [7:0] temp40;
+reg [7:0] temp41;
+reg [7:0] temp42;
+reg [7:0] temp43;
+reg [7:0] temp44;
+reg [7:0] temp45;
+reg [7:0] temp46;
+reg [7:0] temp47;
+reg [7:0] temp48;
+reg [7:0] temp49;
+reg [7:0] temp4;
+reg [7:0] temp50;
+reg [7:0] temp51;
+reg [7:0] temp52;
+reg [7:0] temp53;
+reg [7:0] temp54;
+reg [7:0] temp55;
+reg [7:0] temp56;
+reg [7:0] temp57;
+reg [7:0] temp58;
+reg [7:0] temp59;
+reg [7:0] temp5;
+reg [7:0] temp60;
+reg [7:0] temp61;
+reg [7:0] temp62;
+reg [7:0] temp63;
+reg [7:0] temp64;
+reg [7:0] temp65;
+reg [7:0] temp66;
+reg [7:0] temp67;
+reg [7:0] temp68;
+reg [7:0] temp69;
+reg [7:0] temp6;
+reg [7:0] temp70;
+reg [7:0] temp71;
+reg [7:0] temp72;
+reg [7:0] temp73;
+reg [7:0] temp74;
+reg [7:0] temp75;
+reg [7:0] temp76;
+reg [7:0] temp77;
+reg [7:0] temp78;
+reg [7:0] temp79;
+reg [7:0] temp7;
+reg [7:0] temp80;
+reg [7:0] temp81;
+reg [7:0] temp82;
+reg [7:0] temp83;
+reg [7:0] temp84;
+reg [7:0] temp85;
+reg [7:0] temp86;
+reg [7:0] temp87;
+reg [7:0] temp88;
+reg [7:0] temp89;
+reg [7:0] temp8;
+reg [7:0] temp90;
+reg [7:0] temp91;
+reg [7:0] temp92;
+reg [7:0] temp93;
+reg [7:0] temp94;
+reg [7:0] temp95;
+reg [7:0] temp96;
+reg [7:0] temp97;
+reg [7:0] temp98;
+reg [7:0] temp99;
+reg [7:0] temp9;
+
+initial begin
+b0 = 0;
+b1 = 0;
+b10 = 0;
+b11 = 0;
+b12 = 0;
+b13 = 0;
+b14 = 0;
+b15 = 0;
+b2 = 0;
+b3 = 0;
+b4 = 0;
+b5 = 0;
+b6 = 0;
+b7 = 0;
+b8 = 0;
+b9 = 0;
+temp0 = 0;
+temp1 = 0;
+temp10 = 0;
+temp100 = 0;
+temp101 = 0;
+temp102 = 0;
+temp103 = 0;
+temp104 = 0;
+temp105 = 0;
+temp106 = 0;
+temp107 = 0;
+temp108 = 0;
+temp109 = 0;
+temp11 = 0;
+temp110 = 0;
+temp111 = 0;
+temp112 = 0;
+temp113 = 0;
+temp114 = 0;
+temp115 = 0;
+temp116 = 0;
+temp117 = 0;
+temp118 = 0;
+temp119 = 0;
+temp12 = 0;
+temp120 = 0;
+temp121 = 0;
+temp122 = 0;
+temp123 = 0;
+temp124 = 0;
+temp125 = 0;
+temp126 = 0;
+temp127 = 0;
+temp128 = 0;
+temp129 = 0;
+temp13 = 0;
+temp130 = 0;
+temp131 = 0;
+temp132 = 0;
+temp133 = 0;
+temp134 = 0;
+temp135 = 0;
+temp136 = 0;
+temp137 = 0;
+temp138 = 0;
+temp139 = 0;
+temp14 = 0;
+temp140 = 0;
+temp141 = 0;
+temp142 = 0;
+temp143 = 0;
+temp144 = 0;
+temp145 = 0;
+temp146 = 0;
+temp147 = 0;
+temp148 = 0;
+temp149 = 0;
+temp15 = 0;
+temp150 = 0;
+temp151 = 0;
+temp152 = 0;
+temp153 = 0;
+temp154 = 0;
+temp155 = 0;
+temp156 = 0;
+temp157 = 0;
+temp158 = 0;
+temp159 = 0;
+temp16 = 0;
+temp160 = 0;
+temp161 = 0;
+temp162 = 0;
+temp163 = 0;
+temp164 = 0;
+temp165 = 0;
+temp166 = 0;
+temp167 = 0;
+temp168 = 0;
+temp169 = 0;
+temp17 = 0;
+temp170 = 0;
+temp171 = 0;
+temp172 = 0;
+temp173 = 0;
+temp174 = 0;
+temp175 = 0;
+temp176 = 0;
+temp177 = 0;
+temp178 = 0;
+temp179 = 0;
+temp18 = 0;
+temp180 = 0;
+temp181 = 0;
+temp182 = 0;
+temp183 = 0;
+temp184 = 0;
+temp185 = 0;
+temp186 = 0;
+temp187 = 0;
+temp188 = 0;
+temp189 = 0;
+temp19 = 0;
+temp190 = 0;
+temp191 = 0;
+temp192 = 0;
+temp193 = 0;
+temp194 = 0;
+temp195 = 0;
+temp196 = 0;
+temp197 = 0;
+temp198 = 0;
+temp199 = 0;
+temp2 = 0;
+temp20 = 0;
+temp200 = 0;
+temp201 = 0;
+temp202 = 0;
+temp203 = 0;
+temp204 = 0;
+temp205 = 0;
+temp206 = 0;
+temp207 = 0;
+temp208 = 0;
+temp209 = 0;
+temp21 = 0;
+temp210 = 0;
+temp211 = 0;
+temp212 = 0;
+temp213 = 0;
+temp214 = 0;
+temp215 = 0;
+temp216 = 0;
+temp217 = 0;
+temp218 = 0;
+temp219 = 0;
+temp22 = 0;
+temp220 = 0;
+temp221 = 0;
+temp222 = 0;
+temp223 = 0;
+temp23 = 0;
+temp24 = 0;
+temp25 = 0;
+temp26 = 0;
+temp27 = 0;
+temp28 = 0;
+temp29 = 0;
+temp3 = 0;
+temp30 = 0;
+temp31 = 0;
+temp32 = 0;
+temp33 = 0;
+temp34 = 0;
+temp35 = 0;
+temp36 = 0;
+temp37 = 0;
+temp38 = 0;
+temp39 = 0;
+temp4 = 0;
+temp40 = 0;
+temp41 = 0;
+temp42 = 0;
+temp43 = 0;
+temp44 = 0;
+temp45 = 0;
+temp46 = 0;
+temp47 = 0;
+temp48 = 0;
+temp49 = 0;
+temp5 = 0;
+temp50 = 0;
+temp51 = 0;
+temp52 = 0;
+temp53 = 0;
+temp54 = 0;
+temp55 = 0;
+temp56 = 0;
+temp57 = 0;
+temp58 = 0;
+temp59 = 0;
+temp6 = 0;
+temp60 = 0;
+temp61 = 0;
+temp62 = 0;
+temp63 = 0;
+temp64 = 0;
+temp65 = 0;
+temp66 = 0;
+temp67 = 0;
+temp68 = 0;
+temp69 = 0;
+temp7 = 0;
+temp70 = 0;
+temp71 = 0;
+temp72 = 0;
+temp73 = 0;
+temp74 = 0;
+temp75 = 0;
+temp76 = 0;
+temp77 = 0;
+temp78 = 0;
+temp79 = 0;
+temp8 = 0;
+temp80 = 0;
+temp81 = 0;
+temp82 = 0;
+temp83 = 0;
+temp84 = 0;
+temp85 = 0;
+temp86 = 0;
+temp87 = 0;
+temp88 = 0;
+temp89 = 0;
+temp9 = 0;
+temp90 = 0;
+temp91 = 0;
+temp92 = 0;
+temp93 = 0;
+temp94 = 0;
+temp95 = 0;
+temp96 = 0;
+temp97 = 0;
+temp98 = 0;
+temp99 = 0;
+end
+
+always @(a0) begin
+temp28 <= a0;
+end
+
+always @(a1) begin
+temp29 <= a1;
+end
+
+always @(temp28, temp29) begin
+if ((temp28 > temp29)) begin
+temp30 <= temp29;
+temp31 <= temp28;
+end
+else begin
+temp30 <= temp28;
+temp31 <= temp29;
+end
+
+end
+
+always @(temp30) begin
+temp24 <= temp30;
+end
+
+always @(temp31) begin
+temp25 <= temp31;
+end
+
+always @(a2) begin
+temp32 <= a2;
+end
+
+always @(a3) begin
+temp33 <= a3;
+end
+
+always @(temp33, temp32) begin
+if ((temp32 > temp33)) begin
+temp34 <= temp32;
+temp35 <= temp33;
+end
+else begin
+temp34 <= temp33;
+temp35 <= temp32;
+end
+
+end
+
+always @(temp34) begin
+temp26 <= temp34;
+end
+
+always @(temp35) begin
+temp27 <= temp35;
+end
+
+always @(temp24, temp26) begin
+if ((temp24 > temp26)) begin
+temp36 <= temp26;
+temp38 <= temp24;
+end
+else begin
+temp36 <= temp24;
+temp38 <= temp26;
+end
+
+end
+
+always @(temp25, temp27) begin
+if ((temp25 > temp27)) begin
+temp37 <= temp27;
+temp39 <= temp25;
+end
+else begin
+temp37 <= temp25;
+temp39 <= temp27;
+end
+
+end
+
+always @(temp36, temp37) begin
+if ((temp36 > temp37)) begin
+temp40 <= temp37;
+temp41 <= temp36;
+end
+else begin
+temp40 <= temp36;
+temp41 <= temp37;
+end
+
+end
+
+always @(temp40) begin
+temp16 <= temp40;
+end
+
+always @(temp41) begin
+temp17 <= temp41;
+end
+
+always @(temp38, temp39) begin
+if ((temp38 > temp39)) begin
+temp42 <= temp39;
+temp43 <= temp38;
+end
+else begin
+temp42 <= temp38;
+temp43 <= temp39;
+end
+
+end
+
+always @(temp42) begin
+temp18 <= temp42;
+end
+
+always @(temp43) begin
+temp19 <= temp43;
+end
+
+always @(a4) begin
+temp48 <= a4;
+end
+
+always @(a5) begin
+temp49 <= a5;
+end
+
+always @(temp48, temp49) begin
+if ((temp48 > temp49)) begin
+temp50 <= temp49;
+temp51 <= temp48;
+end
+else begin
+temp50 <= temp48;
+temp51 <= temp49;
+end
+
+end
+
+always @(temp50) begin
+temp44 <= temp50;
+end
+
+always @(temp51) begin
+temp45 <= temp51;
+end
+
+always @(a6) begin
+temp52 <= a6;
+end
+
+always @(a7) begin
+temp53 <= a7;
+end
+
+always @(temp53, temp52) begin
+if ((temp52 > temp53)) begin
+temp54 <= temp52;
+temp55 <= temp53;
+end
+else begin
+temp54 <= temp53;
+temp55 <= temp52;
+end
+
+end
+
+always @(temp54) begin
+temp46 <= temp54;
+end
+
+always @(temp55) begin
+temp47 <= temp55;
+end
+
+always @(temp46, temp44) begin
+if ((temp44 > temp46)) begin
+temp56 <= temp44;
+temp58 <= temp46;
+end
+else begin
+temp56 <= temp46;
+temp58 <= temp44;
+end
+
+end
+
+always @(temp47, temp45) begin
+if ((temp45 > temp47)) begin
+temp57 <= temp45;
+temp59 <= temp47;
+end
+else begin
+temp57 <= temp47;
+temp59 <= temp45;
+end
+
+end
+
+always @(temp57, temp56) begin
+if ((temp56 > temp57)) begin
+temp60 <= temp56;
+temp61 <= temp57;
+end
+else begin
+temp60 <= temp57;
+temp61 <= temp56;
+end
+
+end
+
+always @(temp60) begin
+temp20 <= temp60;
+end
+
+always @(temp61) begin
+temp21 <= temp61;
+end
+
+always @(temp59, temp58) begin
+if ((temp58 > temp59)) begin
+temp62 <= temp58;
+temp63 <= temp59;
+end
+else begin
+temp62 <= temp59;
+temp63 <= temp58;
+end
+
+end
+
+always @(temp62) begin
+temp22 <= temp62;
+end
+
+always @(temp63) begin
+temp23 <= temp63;
+end
+
+always @(temp16, temp20) begin
+if ((temp16 > temp20)) begin
+temp64 <= temp20;
+temp68 <= temp16;
+end
+else begin
+temp64 <= temp16;
+temp68 <= temp20;
+end
+
+end
+
+always @(temp17, temp21) begin
+if ((temp17 > temp21)) begin
+temp65 <= temp21;
+temp69 <= temp17;
+end
+else begin
+temp65 <= temp17;
+temp69 <= temp21;
+end
+
+end
+
+always @(temp18, temp22) begin
+if ((temp18 > temp22)) begin
+temp66 <= temp22;
+temp70 <= temp18;
+end
+else begin
+temp66 <= temp18;
+temp70 <= temp22;
+end
+
+end
+
+always @(temp19, temp23) begin
+if ((temp19 > temp23)) begin
+temp67 <= temp23;
+temp71 <= temp19;
+end
+else begin
+temp67 <= temp19;
+temp71 <= temp23;
+end
+
+end
+
+always @(temp64, temp66) begin
+if ((temp64 > temp66)) begin
+temp72 <= temp66;
+temp74 <= temp64;
+end
+else begin
+temp72 <= temp64;
+temp74 <= temp66;
+end
+
+end
+
+always @(temp65, temp67) begin
+if ((temp65 > temp67)) begin
+temp73 <= temp67;
+temp75 <= temp65;
+end
+else begin
+temp73 <= temp65;
+temp75 <= temp67;
+end
+
+end
+
+always @(temp72, temp73) begin
+if ((temp72 > temp73)) begin
+temp76 <= temp73;
+temp77 <= temp72;
+end
+else begin
+temp76 <= temp72;
+temp77 <= temp73;
+end
+
+end
+
+always @(temp76) begin
+temp0 <= temp76;
+end
+
+always @(temp77) begin
+temp1 <= temp77;
+end
+
+always @(temp74, temp75) begin
+if ((temp74 > temp75)) begin
+temp78 <= temp75;
+temp79 <= temp74;
+end
+else begin
+temp78 <= temp74;
+temp79 <= temp75;
+end
+
+end
+
+always @(temp78) begin
+temp2 <= temp78;
+end
+
+always @(temp79) begin
+temp3 <= temp79;
+end
+
+always @(temp68, temp70) begin
+if ((temp68 > temp70)) begin
+temp80 <= temp70;
+temp82 <= temp68;
+end
+else begin
+temp80 <= temp68;
+temp82 <= temp70;
+end
+
+end
+
+always @(temp69, temp71) begin
+if ((temp69 > temp71)) begin
+temp81 <= temp71;
+temp83 <= temp69;
+end
+else begin
+temp81 <= temp69;
+temp83 <= temp71;
+end
+
+end
+
+always @(temp80, temp81) begin
+if ((temp80 > temp81)) begin
+temp84 <= temp81;
+temp85 <= temp80;
+end
+else begin
+temp84 <= temp80;
+temp85 <= temp81;
+end
+
+end
+
+always @(temp84) begin
+temp4 <= temp84;
+end
+
+always @(temp85) begin
+temp5 <= temp85;
+end
+
+always @(temp82, temp83) begin
+if ((temp82 > temp83)) begin
+temp86 <= temp83;
+temp87 <= temp82;
+end
+else begin
+temp86 <= temp82;
+temp87 <= temp83;
+end
+
+end
+
+always @(temp86) begin
+temp6 <= temp86;
+end
+
+always @(temp87) begin
+temp7 <= temp87;
+end
+
+always @(a8) begin
+temp100 <= a8;
+end
+
+always @(a9) begin
+temp101 <= a9;
+end
+
+always @(temp100, temp101) begin
+if ((temp100 > temp101)) begin
+temp102 <= temp101;
+temp103 <= temp100;
+end
+else begin
+temp102 <= temp100;
+temp103 <= temp101;
+end
+
+end
+
+always @(temp102) begin
+temp96 <= temp102;
+end
+
+always @(temp103) begin
+temp97 <= temp103;
+end
+
+always @(a10) begin
+temp104 <= a10;
+end
+
+always @(a11) begin
+temp105 <= a11;
+end
+
+always @(temp105, temp104) begin
+if ((temp104 > temp105)) begin
+temp106 <= temp104;
+temp107 <= temp105;
+end
+else begin
+temp106 <= temp105;
+temp107 <= temp104;
+end
+
+end
+
+always @(temp106) begin
+temp98 <= temp106;
+end
+
+always @(temp107) begin
+temp99 <= temp107;
+end
+
+always @(temp96, temp98) begin
+if ((temp96 > temp98)) begin
+temp108 <= temp98;
+temp110 <= temp96;
+end
+else begin
+temp108 <= temp96;
+temp110 <= temp98;
+end
+
+end
+
+always @(temp97, temp99) begin
+if ((temp97 > temp99)) begin
+temp109 <= temp99;
+temp111 <= temp97;
+end
+else begin
+temp109 <= temp97;
+temp111 <= temp99;
+end
+
+end
+
+always @(temp108, temp109) begin
+if ((temp108 > temp109)) begin
+temp112 <= temp109;
+temp113 <= temp108;
+end
+else begin
+temp112 <= temp108;
+temp113 <= temp109;
+end
+
+end
+
+always @(temp112) begin
+temp88 <= temp112;
+end
+
+always @(temp113) begin
+temp89 <= temp113;
+end
+
+always @(temp110, temp111) begin
+if ((temp110 > temp111)) begin
+temp114 <= temp111;
+temp115 <= temp110;
+end
+else begin
+temp114 <= temp110;
+temp115 <= temp111;
+end
+
+end
+
+always @(temp114) begin
+temp90 <= temp114;
+end
+
+always @(temp115) begin
+temp91 <= temp115;
+end
+
+always @(a12) begin
+temp120 <= a12;
+end
+
+always @(a13) begin
+temp121 <= a13;
+end
+
+always @(temp120, temp121) begin
+if ((temp120 > temp121)) begin
+temp122 <= temp121;
+temp123 <= temp120;
+end
+else begin
+temp122 <= temp120;
+temp123 <= temp121;
+end
+
+end
+
+always @(temp122) begin
+temp116 <= temp122;
+end
+
+always @(temp123) begin
+temp117 <= temp123;
+end
+
+always @(a14) begin
+temp124 <= a14;
+end
+
+always @(a15) begin
+temp125 <= a15;
+end
+
+always @(temp125, temp124) begin
+if ((temp124 > temp125)) begin
+temp126 <= temp124;
+temp127 <= temp125;
+end
+else begin
+temp126 <= temp125;
+temp127 <= temp124;
+end
+
+end
+
+always @(temp126) begin
+temp118 <= temp126;
+end
+
+always @(temp127) begin
+temp119 <= temp127;
+end
+
+always @(temp118, temp116) begin
+if ((temp116 > temp118)) begin
+temp128 <= temp116;
+temp130 <= temp118;
+end
+else begin
+temp128 <= temp118;
+temp130 <= temp116;
+end
+
+end
+
+always @(temp119, temp117) begin
+if ((temp117 > temp119)) begin
+temp129 <= temp117;
+temp131 <= temp119;
+end
+else begin
+temp129 <= temp119;
+temp131 <= temp117;
+end
+
+end
+
+always @(temp129, temp128) begin
+if ((temp128 > temp129)) begin
+temp132 <= temp128;
+temp133 <= temp129;
+end
+else begin
+temp132 <= temp129;
+temp133 <= temp128;
+end
+
+end
+
+always @(temp132) begin
+temp92 <= temp132;
+end
+
+always @(temp133) begin
+temp93 <= temp133;
+end
+
+always @(temp131, temp130) begin
+if ((temp130 > temp131)) begin
+temp134 <= temp130;
+temp135 <= temp131;
+end
+else begin
+temp134 <= temp131;
+temp135 <= temp130;
+end
+
+end
+
+always @(temp134) begin
+temp94 <= temp134;
+end
+
+always @(temp135) begin
+temp95 <= temp135;
+end
+
+always @(temp92, temp88) begin
+if ((temp88 > temp92)) begin
+temp136 <= temp88;
+temp140 <= temp92;
+end
+else begin
+temp136 <= temp92;
+temp140 <= temp88;
+end
+
+end
+
+always @(temp93, temp89) begin
+if ((temp89 > temp93)) begin
+temp137 <= temp89;
+temp141 <= temp93;
+end
+else begin
+temp137 <= temp93;
+temp141 <= temp89;
+end
+
+end
+
+always @(temp94, temp90) begin
+if ((temp90 > temp94)) begin
+temp138 <= temp90;
+temp142 <= temp94;
+end
+else begin
+temp138 <= temp94;
+temp142 <= temp90;
+end
+
+end
+
+always @(temp95, temp91) begin
+if ((temp91 > temp95)) begin
+temp139 <= temp91;
+temp143 <= temp95;
+end
+else begin
+temp139 <= temp95;
+temp143 <= temp91;
+end
+
+end
+
+always @(temp138, temp136) begin
+if ((temp136 > temp138)) begin
+temp144 <= temp136;
+temp146 <= temp138;
+end
+else begin
+temp144 <= temp138;
+temp146 <= temp136;
+end
+
+end
+
+always @(temp139, temp137) begin
+if ((temp137 > temp139)) begin
+temp145 <= temp137;
+temp147 <= temp139;
+end
+else begin
+temp145 <= temp139;
+temp147 <= temp137;
+end
+
+end
+
+always @(temp145, temp144) begin
+if ((temp144 > temp145)) begin
+temp148 <= temp144;
+temp149 <= temp145;
+end
+else begin
+temp148 <= temp145;
+temp149 <= temp144;
+end
+
+end
+
+always @(temp148) begin
+temp8 <= temp148;
+end
+
+always @(temp149) begin
+temp9 <= temp149;
+end
+
+always @(temp147, temp146) begin
+if ((temp146 > temp147)) begin
+temp150 <= temp146;
+temp151 <= temp147;
+end
+else begin
+temp150 <= temp147;
+temp151 <= temp146;
+end
+
+end
+
+always @(temp150) begin
+temp10 <= temp150;
+end
+
+always @(temp151) begin
+temp11 <= temp151;
+end
+
+always @(temp142, temp140) begin
+if ((temp140 > temp142)) begin
+temp152 <= temp140;
+temp154 <= temp142;
+end
+else begin
+temp152 <= temp142;
+temp154 <= temp140;
+end
+
+end
+
+always @(temp143, temp141) begin
+if ((temp141 > temp143)) begin
+temp153 <= temp141;
+temp155 <= temp143;
+end
+else begin
+temp153 <= temp143;
+temp155 <= temp141;
+end
+
+end
+
+always @(temp153, temp152) begin
+if ((temp152 > temp153)) begin
+temp156 <= temp152;
+temp157 <= temp153;
+end
+else begin
+temp156 <= temp153;
+temp157 <= temp152;
+end
+
+end
+
+always @(temp156) begin
+temp12 <= temp156;
+end
+
+always @(temp157) begin
+temp13 <= temp157;
+end
+
+always @(temp155, temp154) begin
+if ((temp154 > temp155)) begin
+temp158 <= temp154;
+temp159 <= temp155;
+end
+else begin
+temp158 <= temp155;
+temp159 <= temp154;
+end
+
+end
+
+always @(temp158) begin
+temp14 <= temp158;
+end
+
+always @(temp159) begin
+temp15 <= temp159;
+end
+
+always @(temp0, temp8) begin
+if ((temp0 > temp8)) begin
+temp160 <= temp8;
+temp168 <= temp0;
+end
+else begin
+temp160 <= temp0;
+temp168 <= temp8;
+end
+
+end
+
+always @(temp1, temp9) begin
+if ((temp1 > temp9)) begin
+temp161 <= temp9;
+temp169 <= temp1;
+end
+else begin
+temp161 <= temp1;
+temp169 <= temp9;
+end
+
+end
+
+always @(temp2, temp10) begin
+if ((temp2 > temp10)) begin
+temp162 <= temp10;
+temp170 <= temp2;
+end
+else begin
+temp162 <= temp2;
+temp170 <= temp10;
+end
+
+end
+
+always @(temp3, temp11) begin
+if ((temp3 > temp11)) begin
+temp163 <= temp11;
+temp171 <= temp3;
+end
+else begin
+temp163 <= temp3;
+temp171 <= temp11;
+end
+
+end
+
+always @(temp4, temp12) begin
+if ((temp4 > temp12)) begin
+temp164 <= temp12;
+temp172 <= temp4;
+end
+else begin
+temp164 <= temp4;
+temp172 <= temp12;
+end
+
+end
+
+always @(temp5, temp13) begin
+if ((temp5 > temp13)) begin
+temp165 <= temp13;
+temp173 <= temp5;
+end
+else begin
+temp165 <= temp5;
+temp173 <= temp13;
+end
+
+end
+
+always @(temp6, temp14) begin
+if ((temp6 > temp14)) begin
+temp166 <= temp14;
+temp174 <= temp6;
+end
+else begin
+temp166 <= temp6;
+temp174 <= temp14;
+end
+
+end
+
+always @(temp7, temp15) begin
+if ((temp7 > temp15)) begin
+temp167 <= temp15;
+temp175 <= temp7;
+end
+else begin
+temp167 <= temp7;
+temp175 <= temp15;
+end
+
+end
+
+always @(temp160, temp164) begin
+if ((temp160 > temp164)) begin
+temp176 <= temp164;
+temp180 <= temp160;
+end
+else begin
+temp176 <= temp160;
+temp180 <= temp164;
+end
+
+end
+
+always @(temp161, temp165) begin
+if ((temp161 > temp165)) begin
+temp177 <= temp165;
+temp181 <= temp161;
+end
+else begin
+temp177 <= temp161;
+temp181 <= temp165;
+end
+
+end
+
+always @(temp162, temp166) begin
+if ((temp162 > temp166)) begin
+temp178 <= temp166;
+temp182 <= temp162;
+end
+else begin
+temp178 <= temp162;
+temp182 <= temp166;
+end
+
+end
+
+always @(temp163, temp167) begin
+if ((temp163 > temp167)) begin
+temp179 <= temp167;
+temp183 <= temp163;
+end
+else begin
+temp179 <= temp163;
+temp183 <= temp167;
+end
+
+end
+
+always @(temp176, temp178) begin
+if ((temp176 > temp178)) begin
+temp184 <= temp178;
+temp186 <= temp176;
+end
+else begin
+temp184 <= temp176;
+temp186 <= temp178;
+end
+
+end
+
+always @(temp177, temp179) begin
+if ((temp177 > temp179)) begin
+temp185 <= temp179;
+temp187 <= temp177;
+end
+else begin
+temp185 <= temp177;
+temp187 <= temp179;
+end
+
+end
+
+always @(temp184, temp185) begin
+if ((temp184 > temp185)) begin
+temp188 <= temp185;
+temp189 <= temp184;
+end
+else begin
+temp188 <= temp184;
+temp189 <= temp185;
+end
+
+end
+
+always @(temp188) begin
+b0 <= temp188;
+end
+
+always @(temp189) begin
+b1 <= temp189;
+end
+
+always @(temp186, temp187) begin
+if ((temp186 > temp187)) begin
+temp190 <= temp187;
+temp191 <= temp186;
+end
+else begin
+temp190 <= temp186;
+temp191 <= temp187;
+end
+
+end
+
+always @(temp190) begin
+b2 <= temp190;
+end
+
+always @(temp191) begin
+b3 <= temp191;
+end
+
+always @(temp180, temp182) begin
+if ((temp180 > temp182)) begin
+temp192 <= temp182;
+temp194 <= temp180;
+end
+else begin
+temp192 <= temp180;
+temp194 <= temp182;
+end
+
+end
+
+always @(temp181, temp183) begin
+if ((temp181 > temp183)) begin
+temp193 <= temp183;
+temp195 <= temp181;
+end
+else begin
+temp193 <= temp181;
+temp195 <= temp183;
+end
+
+end
+
+always @(temp192, temp193) begin
+if ((temp192 > temp193)) begin
+temp196 <= temp193;
+temp197 <= temp192;
+end
+else begin
+temp196 <= temp192;
+temp197 <= temp193;
+end
+
+end
+
+always @(temp196) begin
+b4 <= temp196;
+end
+
+always @(temp197) begin
+b5 <= temp197;
+end
+
+always @(temp194, temp195) begin
+if ((temp194 > temp195)) begin
+temp198 <= temp195;
+temp199 <= temp194;
+end
+else begin
+temp198 <= temp194;
+temp199 <= temp195;
+end
+
+end
+
+always @(temp198) begin
+b6 <= temp198;
+end
+
+always @(temp199) begin
+b7 <= temp199;
+end
+
+always @(temp168, temp172) begin
+if ((temp168 > temp172)) begin
+temp200 <= temp172;
+temp204 <= temp168;
+end
+else begin
+temp200 <= temp168;
+temp204 <= temp172;
+end
+
+end
+
+always @(temp169, temp173) begin
+if ((temp169 > temp173)) begin
+temp201 <= temp173;
+temp205 <= temp169;
+end
+else begin
+temp201 <= temp169;
+temp205 <= temp173;
+end
+
+end
+
+always @(temp170, temp174) begin
+if ((temp170 > temp174)) begin
+temp202 <= temp174;
+temp206 <= temp170;
+end
+else begin
+temp202 <= temp170;
+temp206 <= temp174;
+end
+
+end
+
+always @(temp171, temp175) begin
+if ((temp171 > temp175)) begin
+temp203 <= temp175;
+temp207 <= temp171;
+end
+else begin
+temp203 <= temp171;
+temp207 <= temp175;
+end
+
+end
+
+always @(temp200, temp202) begin
+if ((temp200 > temp202)) begin
+temp208 <= temp202;
+temp210 <= temp200;
+end
+else begin
+temp208 <= temp200;
+temp210 <= temp202;
+end
+
+end
+
+always @(temp201, temp203) begin
+if ((temp201 > temp203)) begin
+temp209 <= temp203;
+temp211 <= temp201;
+end
+else begin
+temp209 <= temp201;
+temp211 <= temp203;
+end
+
+end
+
+always @(temp208, temp209) begin
+if ((temp208 > temp209)) begin
+temp212 <= temp209;
+temp213 <= temp208;
+end
+else begin
+temp212 <= temp208;
+temp213 <= temp209;
+end
+
+end
+
+always @(temp212) begin
+b8 <= temp212;
+end
+
+always @(temp213) begin
+b9 <= temp213;
+end
+
+always @(temp210, temp211) begin
+if ((temp210 > temp211)) begin
+temp214 <= temp211;
+temp215 <= temp210;
+end
+else begin
+temp214 <= temp210;
+temp215 <= temp211;
+end
+
+end
+
+always @(temp214) begin
+b10 <= temp214;
+end
+
+always @(temp215) begin
+b11 <= temp215;
+end
+
+always @(temp204, temp206) begin
+if ((temp204 > temp206)) begin
+temp216 <= temp206;
+temp218 <= temp204;
+end
+else begin
+temp216 <= temp204;
+temp218 <= temp206;
+end
+
+end
+
+always @(temp205, temp207) begin
+if ((temp205 > temp207)) begin
+temp217 <= temp207;
+temp219 <= temp205;
+end
+else begin
+temp217 <= temp205;
+temp219 <= temp207;
+end
+
+end
+
+always @(temp216, temp217) begin
+if ((temp216 > temp217)) begin
+temp220 <= temp217;
+temp221 <= temp216;
+end
+else begin
+temp220 <= temp216;
+temp221 <= temp217;
+end
+
+end
+
+always @(temp220) begin
+b12 <= temp220;
+end
+
+always @(temp221) begin
+b13 <= temp221;
+end
+
+always @(temp218, temp219) begin
+if ((temp218 > temp219)) begin
+temp222 <= temp219;
+temp223 <= temp218;
+end
+else begin
+temp222 <= temp218;
+temp223 <= temp219;
+end
+
+end
+
+always @(temp222) begin
+b14 <= temp222;
+end
+
+always @(temp223) begin
+b15 <= temp223;
+end
+
+endmodule

@@ -1,0 +1,167 @@
+class Mealy[T](clk: HDL[Boolean], rst: HDL[Boolean],
+  car_waiting: HDL[Boolean], ppl_waiting: HDL[Boolean],
+  cars_green: HDL[Boolean], cars_yellow: HDL[Boolean], cars_red: HDL[Boolean],
+  ppl_green: HDL[Boolean], ppl_yellow: HDL[Boolean], ppl_red: HDL[Boolean])
+    extends HDLClass {
+  def mealy = module {
+    val state_traffic = HDLlize(b0)
+
+    sync(clk, 1) {
+      when (rst) {
+        state_traffic := cars_go.id
+      } .otherwise {
+        when (state_traffic is cars_go.id) {
+          when (ppl_waiting) {
+            state_traffic := people_go.id
+          }
+        } .elsewhen (state_traffic is people_go.id) {
+          when (car_waiting) {
+            state_traffic := cars_go.id
+          }
+        } .otherwise {
+          state_traffic := cars_go.id
+        }
+      }
+    }
+
+    async {
+      when (state_traffic is cars_go.id) {
+        cars_green := ~ppl_waiting
+        cars_yellow := ppl_waiting
+        cars_red := 0
+        ppl_green := 0
+        ppl_yellow := 0
+        ppl_red := 1
+      } .elsewhen (state_traffic is people_go.id) {
+        cars_green := 0
+        cars_yellow := 0
+        cars_red := 1
+        ppl_green := ~car_waiting
+        ppl_yellow := car_waiting
+        ppl_red := 0
+      } .otherwise {
+        cars_green := 0
+        cars_yellow := 0
+        cars_red := 1
+        ppl_green := 0
+        ppl_yellow := 0
+        ppl_red := 1
+      }
+    }
+  }
+
+  override val toCompile = List(mealy)
+}
+
+object Main {
+  def main(args: Array[String]) {
+    println(new Mealy(b0, b0,
+      b0, b0,
+      b0, b0, b0,
+      b0, b0, b0).compile)
+  }
+}
+
+
+
+
+
+
+
+HDLEquals(HDLReg temp0,HDLReg 0)
+HDLEquals(HDLReg temp0,HDLReg 1)
+HDLEquals(HDLReg temp0,HDLReg 0)
+HDLEquals(HDLReg temp0,HDLReg 1)
+module mealy(
+clk,
+rst,
+car_waiting,
+ppl_waiting,
+cars_green,
+cars_yellow,
+cars_red,
+ppl_green,
+ppl_yellow,
+ppl_red
+);
+
+input car_waiting;
+input clk;
+input ppl_waiting;
+input rst;
+output cars_green;
+output cars_red;
+output cars_yellow;
+output ppl_green;
+output ppl_red;
+output ppl_yellow;
+reg cars_green;
+reg cars_red;
+reg cars_yellow;
+reg ppl_green;
+reg ppl_red;
+reg ppl_yellow;
+reg temp0;
+
+initial begin
+cars_green = 0;
+cars_red = 0;
+cars_yellow = 0;
+ppl_green = 0;
+ppl_red = 0;
+ppl_yellow = 0;
+temp0 = 0;
+end
+
+always @(posedge clk) begin
+if (rst == 1) begin
+temp0 <= 0;
+end
+else begin
+if (temp0 == 0) begin
+if (ppl_waiting == 1) begin
+temp0 <= 1;
+end
+end
+else if (temp0 == 1) begin
+if (car_waiting == 1) begin
+temp0 <= 0;
+end
+end
+else begin
+temp0 <= 0;
+end
+
+end
+
+end
+
+always @(temp0, car_waiting, ppl_waiting) begin
+if (temp0 == 0) begin
+cars_green <= ~ppl_waiting;
+cars_yellow <= ppl_waiting;
+cars_red <= 0;
+ppl_green <= 0;
+ppl_yellow <= 0;
+ppl_red <= 1;
+end
+else if (temp0 == 1) begin
+cars_green <= 0;
+cars_yellow <= 0;
+cars_red <= 1;
+ppl_green <= ~car_waiting;
+ppl_yellow <= car_waiting;
+ppl_red <= 0;
+end
+else begin
+cars_green <= 0;
+cars_yellow <= 0;
+cars_red <= 1;
+ppl_green <= 0;
+ppl_yellow <= 0;
+ppl_red <= 1;
+end
+
+end
+
+endmodule

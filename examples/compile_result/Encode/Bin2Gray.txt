@@ -1,0 +1,38 @@
+class Bin2Gray[T <: Arithable]( clk: HDL[Boolean], rst: HDL[Boolean],
+  g: HDL[T], b: HDL[T], width: Int) extends HDLClass {
+  def encode = module {
+    async {
+      for (i <- 0 until width)
+        g(i) := b(i + 1) ^ b(i)
+      g(width) := b(width)
+    }
+  }
+
+  override val toCompile = List(encode)
+}
+
+
+
+module encode(
+clk,
+rst,
+g,
+b
+);
+
+input [3:0] b;
+input [3:0] g;
+input clk;
+input rst;
+
+initial begin
+end
+
+always @(b) begin
+g[0] <= (b[1] ^ b[0]);
+g[1] <= (b[2] ^ b[1]);
+g[2] <= (b[3] ^ b[2]);
+g[3] <= b[3];
+end
+
+endmodule

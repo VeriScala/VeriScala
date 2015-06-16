@@ -1,0 +1,281 @@
+class BitonicSort[T](clk: HDL[Boolean], rst: HDL[Boolean],
+  a: List[HDL[T]], b: List[HDL[T]], init: T) extends HDLClass {
+
+  val DES = 0
+  val ASC = 1
+
+  def compare(a: HDL[T], b: HDL[T], x: HDL[T], y: HDL[T], dir: Int) {
+    async {
+      if (dir == ASC) {
+        when (a > b) {
+          x := b
+          y := a
+        } .otherwise {
+          x := a
+          y := b
+        }
+      } else {
+        when (a > b) {
+          x := a
+          y := b
+        } .otherwise {
+          x := b
+          y := a
+        }
+      }
+    }
+  }
+
+  def bitonicMerge(a: List[HDL[T]], b: List[HDL[T]], dir: Int): HDLBlock = {
+    val n = a.size
+    val k = n / 2
+    if (n > 1) {
+      val t = (for (i <- 0 until n) yield HDLlize(init)).toList
+      for (i <- 0 until k) {
+        compare(a(i), a(i + k), t(i), t(i + k), dir)
+      }
+      bitonicMerge(t.take(k), b.take(k), dir)
+      bitonicMerge(t.drop(k), b.drop(k), dir)
+    } else {
+      async {
+        b.head := a.head
+      }
+    }
+  }
+
+  def bitonicSort(a: List[HDL[T]], b: List[HDL[T]], dir: Int): HDLBlock = {
+    val n = a.size
+    val k = n / 2
+    if (n > 1) {
+      val t = (for (i <- 0 until n) yield HDLlize(init)).toList
+      bitonicSort(a.take(k), t.take(k), ASC)
+      bitonicSort(a.drop(k), t.drop(k), DES)
+      bitonicMerge(t, b, dir)
+    } else {
+      async {
+        b.head := a.head
+      }
+    }
+  }
+
+  def sort = module {
+    bitonicSort(a, b, ASC)
+  }
+
+  override val toCompile = List(sort)
+}
+
+object Main {
+  def main(args: Array[String]) {
+    println((new BitonicSort[Unsigned](b0, b1,
+      (0 until 4).map(_ => HDL(Unsigned(0, 2))).toList,
+      (0 until 4).map(_ => HDL(Unsigned(0, 2))).toList,
+      Unsigned(0, 2))).compile)
+  }
+}
+
+
+
+
+HDLGreaterThan(HDLReg temp4,HDLReg temp5)
+HDLGreaterThan(HDLReg temp8,HDLReg temp9)
+HDLGreaterThan(HDLReg temp0,HDLReg temp2)
+HDLGreaterThan(HDLReg temp1,HDLReg temp3)
+HDLGreaterThan(HDLReg temp12,HDLReg temp13)
+HDLGreaterThan(HDLReg temp14,HDLReg temp15)
+module sort(
+clk,
+rst,
+a0,
+a1,
+a2,
+a3,
+b0,
+b1,
+b2,
+b3
+);
+
+input [1:0] a0;
+input [1:0] a1;
+input [1:0] a2;
+input [1:0] a3;
+input clk;
+input rst;
+output [1:0] b0;
+output [1:0] b1;
+output [1:0] b2;
+output [1:0] b3;
+reg [1:0] b0;
+reg [1:0] b1;
+reg [1:0] b2;
+reg [1:0] b3;
+reg [1:0] temp0;
+reg [1:0] temp10;
+reg [1:0] temp11;
+reg [1:0] temp12;
+reg [1:0] temp13;
+reg [1:0] temp14;
+reg [1:0] temp15;
+reg [1:0] temp16;
+reg [1:0] temp17;
+reg [1:0] temp18;
+reg [1:0] temp19;
+reg [1:0] temp1;
+reg [1:0] temp2;
+reg [1:0] temp3;
+reg [1:0] temp4;
+reg [1:0] temp5;
+reg [1:0] temp6;
+reg [1:0] temp7;
+reg [1:0] temp8;
+reg [1:0] temp9;
+
+initial begin
+b0 = 0;
+b1 = 0;
+b2 = 0;
+b3 = 0;
+temp0 = 0;
+temp1 = 0;
+temp10 = 0;
+temp11 = 0;
+temp12 = 0;
+temp13 = 0;
+temp14 = 0;
+temp15 = 0;
+temp16 = 0;
+temp17 = 0;
+temp18 = 0;
+temp19 = 0;
+temp2 = 0;
+temp3 = 0;
+temp4 = 0;
+temp5 = 0;
+temp6 = 0;
+temp7 = 0;
+temp8 = 0;
+temp9 = 0;
+end
+
+always @(a0) begin
+temp4 <= a0;
+end
+
+always @(a1) begin
+temp5 <= a1;
+end
+
+always @(temp4, temp5) begin
+if ((temp4 > temp5)) begin
+temp6 <= temp5;
+temp7 <= temp4;
+end
+else begin
+temp6 <= temp4;
+temp7 <= temp5;
+end
+
+end
+
+always @(temp6) begin
+temp0 <= temp6;
+end
+
+always @(temp7) begin
+temp1 <= temp7;
+end
+
+always @(a2) begin
+temp8 <= a2;
+end
+
+always @(a3) begin
+temp9 <= a3;
+end
+
+always @(temp9, temp8) begin
+if ((temp8 > temp9)) begin
+temp10 <= temp8;
+temp11 <= temp9;
+end
+else begin
+temp10 <= temp9;
+temp11 <= temp8;
+end
+
+end
+
+always @(temp10) begin
+temp2 <= temp10;
+end
+
+always @(temp11) begin
+temp3 <= temp11;
+end
+
+always @(temp0, temp2) begin
+if ((temp0 > temp2)) begin
+temp12 <= temp2;
+temp14 <= temp0;
+end
+else begin
+temp12 <= temp0;
+temp14 <= temp2;
+end
+
+end
+
+always @(temp1, temp3) begin
+if ((temp1 > temp3)) begin
+temp13 <= temp3;
+temp15 <= temp1;
+end
+else begin
+temp13 <= temp1;
+temp15 <= temp3;
+end
+
+end
+
+always @(temp12, temp13) begin
+if ((temp12 > temp13)) begin
+temp16 <= temp13;
+temp17 <= temp12;
+end
+else begin
+temp16 <= temp12;
+temp17 <= temp13;
+end
+
+end
+
+always @(temp16) begin
+b0 <= temp16;
+end
+
+always @(temp17) begin
+b1 <= temp17;
+end
+
+always @(temp14, temp15) begin
+if ((temp14 > temp15)) begin
+temp18 <= temp15;
+temp19 <= temp14;
+end
+else begin
+temp18 <= temp14;
+temp19 <= temp15;
+end
+
+end
+
+always @(temp18) begin
+b2 <= temp18;
+end
+
+always @(temp19) begin
+b3 <= temp19;
+end
+
+endmodule

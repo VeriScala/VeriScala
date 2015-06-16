@@ -1,0 +1,228 @@
+class Moore(clk: HDL[Boolean], rst: HDL[Boolean],
+  cars_green: HDL[Boolean], cars_yellow: HDL[Boolean], cars_red: HDL[Boolean],
+  ppl_green: HDL[Boolean], ppl_yellow: HDL[Boolean], ppl_red: HDL[Boolean],
+  timerStep: Int)
+    extends HDLClass {
+
+  object StatesTrafficLights extends Enumeration {
+    type StatesTrafficLights = Value
+    val cars_go, cars_stop, people_go, people_stop = Value
+  }
+  import StatesTrafficLights._
+
+  private val timerStep1 = timerStep + 1
+
+  def moore = module {
+    val state_traffic = HDLlize(Unsigned(people_stop.id, 2))
+    val timer = HDLlize(Unsigned(1, timerStep1))
+
+    sync(clk, 1) {
+      when (rst) {
+        timer := 1
+        state_traffic := cars_stop.id
+      } .otherwise {
+        when (state_traffic is cars_stop.id) {
+          timer := 1
+          state_traffic := people_go.id
+        } .elsewhen (state_traffic is people_go.id) {
+          timer := (timer << 1) % math.pow(2, timerStep1).toInt
+          when (timer(timerStep) is 1) {
+            state_traffic := people_stop.id
+          }
+        } .elsewhen (state_traffic is people_stop.id) {
+          timer := 1
+          state_traffic := cars_go.id
+        } .elsewhen (state_traffic is cars_go.id) {
+          timer := (timer << 1) % math.pow(2, timerStep1).toInt
+          when (timer(timerStep) is 1) {
+            state_traffic := cars_stop.id
+          }
+        } .otherwise {
+          state_traffic := people_stop.id
+        }
+      }
+    }
+
+    async {
+      when (state_traffic is cars_go.id) {
+        cars_green := b1
+        cars_yellow := b0
+        cars_red := b0
+        ppl_green := b0
+        ppl_yellow := b0
+        ppl_red := b1
+      } .elsewhen (state_traffic is cars_stop.id) {
+        cars_green := b0
+        cars_yellow := b1
+        cars_red := b0
+        ppl_green := b0
+        ppl_yellow := b0
+        ppl_red := b1
+      } .elsewhen (state_traffic is people_go.id) {
+        cars_green := b0
+        cars_yellow := b0
+        cars_red := b1
+        ppl_green := b1
+        ppl_yellow := b0
+        ppl_red := b0
+      } .elsewhen (state_traffic is people_stop.id) {
+        cars_green := b0
+        cars_yellow := b0
+        cars_red := b1
+        ppl_green := b0
+        ppl_yellow := b1
+        ppl_red := b0
+      } .otherwise {
+        cars_green := b0
+        cars_yellow := b0
+        cars_red := b1
+        ppl_green := b0
+        ppl_yellow := b0
+        ppl_red := b1
+      }
+    }
+  }
+
+  override val toCompile = List(moore)
+}
+
+object Main {
+  def main(args: Array[String]) {
+    println(new Moore(false, false,
+      false, false, false,
+      false, false, false,
+      2).compile)
+  }
+}
+
+
+
+
+HDLEquals(HDLReg temp0,HDLReg 1)
+HDLEquals(HDLReg temp0,HDLReg 2)
+HDLEquals(HDLIndex(HDLReg temp1,2),HDLReg 1)
+HDLEquals(HDLReg temp0,HDLReg 3)
+HDLEquals(HDLReg temp0,HDLReg 0)
+HDLEquals(HDLIndex(HDLReg temp1,2),HDLReg 1)
+HDLEquals(HDLReg temp0,HDLReg 0)
+HDLEquals(HDLReg temp0,HDLReg 1)
+HDLEquals(HDLReg temp0,HDLReg 2)
+HDLEquals(HDLReg temp0,HDLReg 3)
+module moore(
+clk,
+rst,
+cars_green,
+cars_yellow,
+cars_red,
+ppl_green,
+ppl_yellow,
+ppl_red
+);
+
+input clk;
+input rst;
+output cars_green;
+output cars_red;
+output cars_yellow;
+output ppl_green;
+output ppl_red;
+output ppl_yellow;
+reg cars_green;
+reg cars_red;
+reg cars_yellow;
+reg ppl_green;
+reg ppl_red;
+reg ppl_yellow;
+reg [1:0] temp0;
+reg [2:0] temp1;
+
+initial begin
+cars_green = 0;
+cars_red = 0;
+cars_yellow = 0;
+ppl_green = 0;
+ppl_red = 0;
+ppl_yellow = 0;
+temp0 = 3;
+temp1 = 1;
+end
+
+always @(posedge clk) begin
+if (rst == 1) begin
+temp1 <= 1;
+temp0 <= 1;
+end
+else begin
+if (temp0 == 1) begin
+temp1 <= 1;
+temp0 <= 2;
+end
+else if (temp0 == 2) begin
+temp1 <= ((temp1 << 1) % 8);
+if (temp1[2] == 1) begin
+temp0 <= 3;
+end
+end
+else if (temp0 == 3) begin
+temp1 <= 1;
+temp0 <= 0;
+end
+else if (temp0 == 0) begin
+temp1 <= ((temp1 << 1) % 8);
+if (temp1[2] == 1) begin
+temp0 <= 1;
+end
+end
+else begin
+temp0 <= 3;
+end
+
+end
+
+end
+
+always @(temp0) begin
+if (temp0 == 0) begin
+cars_green <= 1;
+cars_yellow <= 0;
+cars_red <= 0;
+ppl_green <= 0;
+ppl_yellow <= 0;
+ppl_red <= 1;
+end
+else if (temp0 == 1) begin
+cars_green <= 0;
+cars_yellow <= 1;
+cars_red <= 0;
+ppl_green <= 0;
+ppl_yellow <= 0;
+ppl_red <= 1;
+end
+else if (temp0 == 2) begin
+cars_green <= 0;
+cars_yellow <= 0;
+cars_red <= 1;
+ppl_green <= 1;
+ppl_yellow <= 0;
+ppl_red <= 0;
+end
+else if (temp0 == 3) begin
+cars_green <= 0;
+cars_yellow <= 0;
+cars_red <= 1;
+ppl_green <= 0;
+ppl_yellow <= 1;
+ppl_red <= 0;
+end
+else begin
+cars_green <= 0;
+cars_yellow <= 0;
+cars_red <= 1;
+ppl_green <= 0;
+ppl_yellow <= 0;
+ppl_red <= 1;
+end
+
+end
+
+endmodule
