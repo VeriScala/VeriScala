@@ -483,6 +483,10 @@ object HDLBase {
     override val exps: Seq[HDLExp[Any]])
       extends HDLBlock(exps)
 
+  case class HDLMultSyncBlock(val regWhen: Seq[(HDLReg[Boolean], Int)],
+    override val exps: Seq[HDLExp[Any]])
+      extends HDLBlock(exps)
+
   case class HDLAsyncBlock(val senslist: Seq[HDLReg[Any]],
     override val exps: Seq[HDLExp[Any]])
       extends HDLBlock(exps)
@@ -679,6 +683,19 @@ object HDLBase {
       }
     }
 
+    def sync(clkWhen: (HDLReg[Boolean], Int)*) = {
+      incExpLvl
+      HDLMultSyncPart(clkWhen)
+    }
+
+    case class HDLMultSyncPart(clkWhen: Seq[(HDLReg[Boolean], Int)]) {
+      def apply(exps: HDLExp[Any]*) = {
+        val block = HDLMultSyncBlock(clkWhen, getAndClearExps)
+        currentMod.value.addBlock(block)
+        block
+      }
+    }
+
     def async = {
       incExpLvl
       new HDLAsyncPart
@@ -846,6 +863,11 @@ object HDLBase {
         case HDLSyncBlock(reg, when, _) =>
           "always @(" + (if (when == 1) "posedge " else "negedge ") +
           reg.getName + ") begin\n" + stmts + "\nend\n"
+        case HDLMultSyncBlock(regs, _) =>
+          "always @(" + regs.map(regWhen =>
+            (if (regWhen._2 == 1) "posedge " else "negedge ")
+              + regWhen._1.getName).mkString(
+            " or ") + ") begin\n" + stmts + "\nend\n"
         case HDLAsyncBlock(senslist, _) =>
           "always @(" + senslist.map(compile(_)).mkString(", ") +
           ") begin\n" + stmts + "\nend\n"
