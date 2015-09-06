@@ -1,4 +1,4 @@
-package Hashmap
+package  NewHDLExample.Hashmap
 
 import NewHDL.Core.HDLBase._
 
@@ -41,7 +41,7 @@ class Hashmap(reset:HDL[Boolean],clock:HDL[Boolean],set:HDL[Boolean],
     async{
       when (key_cached < key_do){
         compare := 1
-      }.elsewhen(key_cached == key_do){
+      }.elsewhen(key_cached is key_do){
         compare := 2
       }.otherwise{
         compare := 3
@@ -88,7 +88,7 @@ class Hashmap(reset:HDL[Boolean],clock:HDL[Boolean],set:HDL[Boolean],
           ready := 1
           write_enable := 0
         }.elsewhen(state is 3){
-          when((compare is 1) | read_addr > num){
+          when((compare is 1) | (read_addr > num)){
             error := 1
             ready := 1
           }.elsewhen(compare is 2){
@@ -115,10 +115,80 @@ class Hashmap(reset:HDL[Boolean],clock:HDL[Boolean],set:HDL[Boolean],
           }.elsewhen(compare is 1){
             state := 6
             write_enable := 1
-            
+            write_addr := read_addr
+            key_di := key_cached
+            value_di := di_cached
+          }.elsewhen(compare is 2){
+            state := 7
+            write_enable := 1
+            write_addr := read_addr
+            key_di := key_cached
+            value_di := di_cached
+          }.otherwise{
+            write_enable := 0
+            read_addr := read_addr + 1
           }
+        }.elsewhen(state is 6){
+          when (read_addr is num) {
+            state := 8
+            write_enable := 1
+            write_addr := read_addr + 1
+            key_di := key_do
+            value_di := value_do
+          }.otherwise {
+            write_enable := 1
+            write_addr := read_addr + 1
+            key_di := key_do
+            value_di := value_do
+            read_addr := read_addr + 1
+          }
+        }.elsewhen(state is 7){
+          dataout := value_do
+          ready := 1
+          write_enable := 0
+        }.elsewhen(state is 8){
+          dataout := value_do
+          num := num + 1
+          ready := 1
+          write_enable := 0
+        }.elsewhen(state is 9){
+          when ((compare is 1) |(read_addr > num)) {
+            error := 1
+            ready := 1
+          }.elsewhen (compare is 2) {
+            state := 1
+            write_enable := 0
+            read_addr := read_addr + 1
+          }.otherwise{
+            read_addr := read_addr + 1
+            write_enable := 0
+          }
+        }.elsewhen(state is 10){
+          when (read_addr > num) {
+            state := 11
+            write_enable := 0
+          }.otherwise {
+            write_enable := 1
+            write_addr := read_addr - 1
+            key_di := key_do
+            value_di := value_do
+            read_addr := read_addr + 1
+          }
+        }.otherwise{
+          num := num - 1
+          ready := 1
+          write_enable := 0
         }
-      }
+      }.otherwise{}
     }
+  }
+  override val toCompile = List(hashmap)
+}
+
+
+object Main{
+  def main(args: Array[String]): Unit ={
+    println(new Hashmap(b0, b0, b0, Unsigned(0,16),Unsigned(0,16),Unsigned(0,2),Unsigned(0,16),
+    Unsigned(0,4),b0,256,16,8).compile)
   }
 }
