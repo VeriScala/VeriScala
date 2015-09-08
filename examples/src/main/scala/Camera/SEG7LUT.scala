@@ -1,4 +1,4 @@
-package Camera
+package Camera.SEG7LUT
 
 import NewHDL.Core.HDLBase._
 

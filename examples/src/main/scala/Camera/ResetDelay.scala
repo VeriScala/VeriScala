@@ -1,4 +1,4 @@
-package Camera
+package Camera.ResetDelay
 
 import NewHDL.Core.HDLBase._
 

@@ -1,4 +1,4 @@
-package Camera
+package Camera.RAW2RGB
 
 import NewHDL.Core.HDLBase._
 

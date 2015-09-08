@@ -1,4 +1,4 @@
-package Camera
+package Camera.I2CController
 
 import NewHDL.Core.HDLBase._
 
@@ -194,7 +194,6 @@ class I2CController(CLOCK:HDL[Boolean],I2C_SCLK:HDL[Boolean],I2C_SDAT:HDL[Boolea
   override val toCompile = List(I2CController)
 
 }
-
 
 object Main{
   def main(args: Array[String]): Unit ={
