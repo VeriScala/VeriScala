@@ -9,6 +9,8 @@ ScalaHDL is a tool that you can write Scala code to generate Verilog code run on
 
 * Stronger type system
 * Type safe
+* Float-point support
+* Multiple task support
 
 ### Versions
 TODO
