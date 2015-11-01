@@ -2,13 +2,12 @@ package NewHDL.Core
 
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
-import scala.annotation.StaticAnnotation
+import scala.annotation.tailrec
 import scala.collection.mutable.Stack
 import scala.util.DynamicVariable
 import scala.math.pow
 
 import java.net.{DatagramPacket, DatagramSocket, InetAddress}
-import scala.annotation.tailrec
 
 import NewHDL.Exceptions.NotEnoughBitsException
 import NewHDL.Simulation.Core.Waiter
@@ -47,9 +46,10 @@ object HDLBase {
     private var posedgeWaiters: List[Waiter] = List()
     private var negedgeWaiters: List[Waiter] = List()
 
+    // get n th bit
     def apply(n: Int): Int = {
       if (n < length)
-        (value / (pow(2, n).toInt)) & 1
+        (value / pow(2, n).toInt) & 1
       else 0
     }
 
@@ -57,8 +57,8 @@ object HDLBase {
       if (signed) {
         next = if (HDLPrimitive.getSignedSize(n) > length) {
           val s = n.toBinaryString
-          val t = Integer.parseInt(s.slice(s.size - length + 1, s.size), 2)
-          if (s(s.size - length) == "1"(0)) -(~t + 1)
+          val t = Integer.parseInt(s.slice(s.length - length + 1, s.length), 2)
+          if (s(s.length - length) == "1"(0)) -(~t + 1)
           else t
         } else {
           n
@@ -67,7 +67,7 @@ object HDLBase {
         if (n >= 0) {
           next = if (HDLPrimitive.getUnsignedSize(n) > length) {
             val s = n.toBinaryString
-            Integer.parseInt(s.slice(s.size - length, s.size), 2)
+            Integer.parseInt(s.slice(s.length - length, s.length), 2)
           } else n
         } else {
           var n0 = n
@@ -234,15 +234,15 @@ object HDLBase {
 
   object HDLPrimitive {
     def getUnsignedSize(value: Int): Int = {
-      value.abs.toBinaryString.size
+      value.abs.toBinaryString.length
     }
 
     def getSignedSize(value: Int): Int = {
       val s = value.toBinaryString
       if (value == -1) 2
-      else if (value < 0) ("1" + s.dropWhile(_ == '1')).size
+      else if (value < 0) ("1" + s.dropWhile(_ == '1')).length
       else if (value == 0) 1
-      else s.size + 1
+      else s.length + 1
     }
   }
 
@@ -266,40 +266,40 @@ object HDLBase {
   }
 
   implicit def list2hdlvaluelist[T](x: List[T]): HDLValueList[T] =
-    HDLValueList(x.map(any2hdl(_)))
+    HDLValueList(x.map(any2hdl))
   implicit def any2hdl[T](x: => T): HDLReg[T] = new HDLReg[T](x)
-  implicit def int2hdlsigned(x: => Int) = new HDLReg(Signed(x,
+  implicit def int2hdlsigned(x: => Int): HDLReg[Signed] = new HDLReg(Signed(x,
     HDLPrimitive.getSignedSize(x)))
 
   private var exps: List[HDLExp[Any]] = List()
   private val expStack: Stack[List[HDLExp[Any]]] = new Stack()
   def addExp(exp: HDLExp[Any]) = {
-    var lst = expStack.pop
+    var lst = expStack.pop()
     lst = exp :: lst
     expStack.push(lst)
     expStack
   }
   def replaceLastExp(exp: HDLExp[Any]) = {
-    var lst = expStack.pop
+    var lst = expStack.pop()
     lst = exp :: lst.tail
     expStack.push(lst)
     expStack
   }
-  def removeLastExp = {
-    val lst = expStack.pop
+  def removeLastExp() = {
+    val lst = expStack.pop()
     expStack.push(lst.tail)
     expStack
   }
   def getExps = expStack.top.reverse
-  def incExpLvl {
+  def incExpLvl() {
     expStack.push(List())
   }
-  def clearExps {
-    expStack.pop
+  def clearExps() {
+    expStack.pop()
   }
   def getAndClearExps = {
     val l = getExps
-    clearExps
+    clearExps()
     l
   }
 
@@ -379,7 +379,7 @@ object HDLBase {
       case None => value.toString
     }
 
-    def isConst = name == None
+    def isConst = name.isEmpty
 
     def value = hdlval(_value)
 
@@ -426,7 +426,7 @@ object HDLBase {
 
     def initDecl: String = _value match {
       case s: Seq[Any] =>
-        val a = (0 until s.length).zip(s.map(any2hdl(_))).map(elt =>
+        val a = s.indices.zip(s.map(any2hdl)).map(elt =>
           getName + "[" + elt._1 + "] = " + elt._2.value).mkString(";\n") + ";\n"
         a
       case _ =>
@@ -465,7 +465,7 @@ object HDLBase {
 
     override def equals(other: Any): Boolean = other match {
       case num: Int =>
-        registers.size == 1 && registers(0).value == num
+        registers.size == 1 && registers.head.value == num
       case reg: HDLReg[T] =>
         getName == reg.getName && value == reg.value &&
         length == reg.length && signed == reg.signed
@@ -479,19 +479,19 @@ object HDLBase {
 
   abstract class HDLBlock(val exps: Seq[HDLExp[Any]])
 
-  case class HDLSyncBlock(val reg: HDLReg[Boolean], val when: Int,
+  case class HDLSyncBlock(reg: HDLReg[Boolean], when: Int,
     override val exps: Seq[HDLExp[Any]])
       extends HDLBlock(exps)
 
-  case class HDLMultSyncBlock(val regWhen: Seq[(HDLReg[Boolean], Int)],
+  case class HDLMultSyncBlock(regWhen: Seq[(HDLReg[Boolean], Int)],
     override val exps: Seq[HDLExp[Any]])
       extends HDLBlock(exps)
 
-  case class HDLAsyncBlock(val senslist: Seq[HDLReg[Any]],
+  case class HDLAsyncBlock(senslist: Seq[HDLReg[Any]],
     override val exps: Seq[HDLExp[Any]])
       extends HDLBlock(exps)
 
-  case class HDLDelayBlock(val duration: Int,
+  case class HDLDelayBlock(duration: Int,
     override val exps: Seq[HDLExp[Any]])
       extends HDLBlock(exps)
 
@@ -523,17 +523,18 @@ object HDLBase {
     }
 
     def setParams(params: List[Any]) {
-      params.map(param => param match {
+      params.foreach {
         case reg: HDLReg[Any] =>
           _params = reg :: _params
         case lst: List[HDLReg[Any]] =>
           _params = lst.reverse ++ _params
-      })
+      }
     }
 
     def params = _params.reverse
 
     def setBlocks(blocks: List[HDLBlock]) {
+      _blocks = blocks.reverse
     }
 
     def blocks = _blocks.reverse
@@ -671,7 +672,7 @@ object HDLBase {
     }
 
     def sync(clk: HDLReg[Boolean], when: Int) = {
-      incExpLvl
+      incExpLvl()
       HDLSyncPart(clk, when)
     }
 
@@ -684,7 +685,7 @@ object HDLBase {
     }
 
     def sync(clkWhen: (HDLReg[Boolean], Int)*) = {
-      incExpLvl
+      incExpLvl()
       HDLMultSyncPart(clkWhen)
     }
 
@@ -697,7 +698,7 @@ object HDLBase {
     }
 
     def async = {
-      incExpLvl
+      incExpLvl()
       new HDLAsyncPart
     }
 
@@ -712,7 +713,7 @@ object HDLBase {
     }
 
     def delay(duration: Int) = {
-      incExpLvl
+      incExpLvl()
       HDLDelayPart(duration)
     }
 
@@ -725,7 +726,7 @@ object HDLBase {
     }
 
     def when(cond: HDLExp[Boolean]) = {
-      incExpLvl
+      incExpLvl()
       WhenPart1(cond)
     }
 
@@ -755,18 +756,18 @@ object HDLBase {
           val oth = getAndClearExps
           val conds2 = HDLNormalCondition(cond, oth) :: conds
           val w = HDLWhen(conds2)
-          removeLastExp
+          removeLastExp()
           new WhenPart2(conds2)
         }
       }
 
       def otherwise = {
-        incExpLvl
+        incExpLvl()
         HDLOtherwise
       }
 
       def elsewhen = {
-        incExpLvl
+        incExpLvl()
         HDLElsewhen
       }
     }
@@ -788,11 +789,10 @@ object HDLBase {
         case r: HDLReg[Any] =>
           "if (" + compile(c) + " == 1) begin\n" +
           f.map(compile(_)).mkString("\n") + "\nend"
-        case _ => {
+        case _ =>
           println(c)
           "if (" + compile(c) + ") begin\n" +
           f.map(compile(_)).mkString("\n") + "\nend"
-        }
       }
       case HDLBooleanCondition(b, f) if b =>
         "begin\n" + f.map(compile(_)).mkString("\n") + "\nend\n"
@@ -804,7 +804,7 @@ object HDLBase {
         rhs match {
           case HDLValueListElem(lst, idx) =>
             val l = lst.lst
-            val s = (0 until l.length).map(i =>
+            val s = l.indices.map(i =>
               List(i, ": ", compile(lhs),
                 " <= ", compile(l(i)), ";").mkString).mkString("\n")
             "case (" + idx.getName + ")\n" + s + "\nendcase\n"
