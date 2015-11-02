@@ -266,7 +266,7 @@ object HDLBase {
   }
 
   implicit def list2hdlvaluelist[T](x: List[T]): HDLValueList[T] =
-    HDLValueList(x.map(any2hdl))
+    HDLValueList(x.map(any2hdl(_)))
   implicit def any2hdl[T](x: => T): HDLReg[T] = new HDLReg[T](x)
   implicit def int2hdlsigned(x: => Int): HDLReg[Signed] = new HDLReg(Signed(x,
     HDLPrimitive.getSignedSize(x)))
@@ -426,7 +426,7 @@ object HDLBase {
 
     def initDecl: String = _value match {
       case s: Seq[Any] =>
-        val a = s.indices.zip(s.map(any2hdl)).map(elt =>
+        val a = s.indices.zip(s.map(any2hdl(_))).map(elt =>
           getName + "[" + elt._1 + "] = " + elt._2.value).mkString(";\n") + ";\n"
         a
       case _ =>
