@@ -9,6 +9,6 @@ lazy val examples = ProjectRef(file("examples"), "examples")
 
 def common = Seq(
   organization := "com.liyaos",
-  scalaVersion := "2.11.0",
+  scalaVersion := "2.11.7",
   version := "0.0.1",
   libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % "2.2.1" % "test"))

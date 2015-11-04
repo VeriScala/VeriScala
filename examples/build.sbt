@@ -5,7 +5,9 @@ lazy val examples = project
   .dependsOn(lib)
   .settings(name := "NewHDL Examples",
     organization := "com.liyaos",
-    scalaVersion := "2.11.0",
+    scalaVersion := "2.11.7",
     version := "0.0.1",
     parallelExecution in Test := false,
-    libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % "2.2.1" % "test"))
+    libraryDependencies ++= Seq(
+      "org.scalatest" %% "scalatest" % "2.2.1" % "test",
+      "com.typesafe" % "config" % "1.3.0"))

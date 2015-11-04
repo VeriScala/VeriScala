@@ -30,9 +30,6 @@ object Main {
       Unsigned(0, width), Unsigned(0, width),
       width, depth, Unsigned(0, width))
     println(handle_FIFO.compile)
-
-    // 8081 is FPGA port, 8082 is ScalaHDL host port
-    handle_FIFO.network_debug_run("59.78.56.59", 8081, 8082)
   }
 
 }

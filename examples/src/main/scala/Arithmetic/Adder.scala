@@ -1,5 +1,6 @@
 package NewHDLExample.Arithmetic.Add
 
+import com.typesafe.config._
 import NewHDL.Core.HDLBase._
 
 class Adder[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
@@ -23,8 +24,10 @@ object Main {
       Signed(0, 5), Signed(1, 5), Signed(0, 6))
     println(handle_Adder.compile)
 
-    // 8081 is FPGA(Simulator) port, 8082 is ScalaHDL host port
-    //handle_Adder.network_debug_run("59.78.56.59", 8081, 8082)
+    /*handle_Adder.network_on_off = true
+    val conf : Config = ConfigFactory.load()
+    handle_Adder.network_debug_run(conf.getString("ScalaHDL.remote-ip"), conf.getInt("ScalaHDL.remote-port"),
+      conf.getInt("ScalaHDL.ScalaHDL-port"))*/
   }
 }
 
