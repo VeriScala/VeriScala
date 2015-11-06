@@ -41,16 +41,14 @@ class AdderTest extends FunSuite {
     bench.udpcore_on_off = true
     new Thread(new Runnable {
       def run() {
-        bench.udpcore_debug_run(conf.getString("ScalaHDL.ScalaHDL-ip"), conf.getInt("ScalaHDL.ScalaHDL-port"),
-          conf.getInt("ScalaHDL.remote-port"))
+        bench.udpcore_debug_run()
       }
     }).run()
 
     bench.network_on_off = true
     new Thread(new Runnable {
       def run() {
-        bench.network_debug_run(conf.getString("ScalaHDL.remote-ip"), conf.getInt("ScalaHDL.remote-port"),
-          conf.getInt("ScalaHDL.ScalaHDL-port"))
+        bench.network_debug_run()
       }
     }).run()
 

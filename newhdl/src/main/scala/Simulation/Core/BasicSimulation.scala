@@ -10,6 +10,7 @@ import java.util.Date
 import java.util.Locale
 import java.text.SimpleDateFormat
 import java.net.{DatagramPacket, DatagramSocket, InetAddress}
+import com.typesafe.config._
 import math.pow
 
 import scala.annotation.tailrec
@@ -429,6 +430,12 @@ trait SimulationUDPCore {
       udpcore_receive_socket = new DatagramSocket(udpcore_receive_port)
       //udpcore_receive_loop(udpcore_receive_socket, udpcore_receive_buffer)
     }
+  }
+
+  def udpcore_debug_run() : Unit = {
+    val conf : Config = ConfigFactory.load()
+    udpcore_debug_run(conf.getString("ScalaHDL.ScalaHDL-ip"), conf.getInt("ScalaHDL.ScalaHDL-port"),
+      conf.getInt("ScalaHDL.simulator-port"))
   }
 }
 

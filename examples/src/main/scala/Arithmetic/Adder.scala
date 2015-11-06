@@ -24,10 +24,9 @@ object Main {
       Signed(0, 5), Signed(1, 5), Signed(0, 6))
     println(handle_Adder.compile)
 
-    /*handle_Adder.network_on_off = true
+    handle_Adder.network_on_off = true
     val conf : Config = ConfigFactory.load()
-    handle_Adder.network_debug_run(conf.getString("ScalaHDL.remote-ip"), conf.getInt("ScalaHDL.remote-port"),
-      conf.getInt("ScalaHDL.ScalaHDL-port"))*/
+    handle_Adder.network_debug_run()
   }
 }
 

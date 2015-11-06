@@ -6,8 +6,8 @@ import scala.annotation.tailrec
 import scala.collection.mutable.Stack
 import scala.util.DynamicVariable
 import scala.math.pow
-
 import java.net.{DatagramPacket, DatagramSocket, InetAddress}
+import com.typesafe.config._
 
 import NewHDL.Exceptions.NotEnoughBitsException
 import NewHDL.Simulation.Core.Waiter
@@ -986,6 +986,11 @@ object HDLBase {
       }
     }
 
+    def network_debug_run() : Unit = {
+      val conf : Config = ConfigFactory.load()
+      network_debug_run(conf.getString("ScalaHDL.simulator-ip"), conf.getInt("ScalaHDL.simulator-port"),
+        conf.getInt("ScalaHDL.ScalaHDL-port"))
+    }
   }
 
 }
