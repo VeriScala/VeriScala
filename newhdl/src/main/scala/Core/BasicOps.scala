@@ -1,6 +1,7 @@
 package NewHDL.Core
 
-import scala.reflect.macros.Context
+//import scala.reflect.macros.Context
+import scala.reflect.macros.whitebox
 import scala.language.experimental.macros
 import scala.annotation.tailrec
 import scala.collection.mutable.Stack
@@ -544,7 +545,7 @@ object HDLBase {
     }
   }
 
-  def moduleImpl(c: Context)(blocks: c.Expr[HDLBlock]*):
+  def moduleImpl(c: whitebox.Context)(blocks: c.Expr[HDLBlock]*):
       c.Expr[HDLModule] = {
     import c.universe._
     def constructModule(moduleName: Name, names: List[(TermName, Int)]) = {
@@ -554,36 +555,36 @@ object HDLBase {
         val tpe = pair._2
         if (tpe == 0) {
           Apply(Select(
-            Ident(newTermName(name.toString)), newTermName("setName")),
+            Ident(TermName(name.toString)), TermName("setName")),
             List(Literal(Constant(name.toString))))
         } else {
           Apply(Select(
-            Apply(Select(Literal(Constant(0)), newTermName("until")),
-              List(Select(Ident(newTermName(name.toString)),
-                newTermName("size")))), newTermName("foreach")),
+            Apply(Select(Literal(Constant(0)), TermName("until")),
+              List(Select(Ident(TermName(name.toString)),
+                TermName("size")))), TermName("foreach")),
             List(Function(List(ValDef(Modifiers(Flag.PARAM),
-              newTermName("i"), TypeTree(), EmptyTree)),
+              TermName("i"), TypeTree(), EmptyTree)),
               Apply(Select(
-                Apply(Select(Ident(newTermName(name.toString)),
-                  newTermName("apply")), List(Ident(newTermName("i")))),
-                newTermName("setName")),
+                Apply(Select(Ident(TermName(name.toString)),
+                  TermName("apply")), List(Ident(TermName("i")))),
+                TermName("setName")),
                 List(Apply(Select(Literal(Constant(name.toString)),
-                  newTermName("$plus")), List(Ident(newTermName("i")))))))))
+                  TermName("$plus")), List(Ident(TermName("i")))))))))
         }})
-      val r = Apply(Select(New(Ident(newTypeName("HDLModule"))),
-        nme.CONSTRUCTOR),
-        List(Literal(Constant(moduleName.decoded))))
-      val mod = newTermName("mod")
+      val r = Apply(Select(New(Ident(TypeName("HDLModule"))),
+        termNames.CONSTRUCTOR),
+        List(Literal(Constant(moduleName.decodedName.toString))))
+      val mod = TermName("mod")
       val d = ValDef(Modifiers(), mod, TypeTree(), r)
-      val p = Apply(Select(Ident(mod), newTermName("setParams")),
-        List(Apply(Select(Ident("List"), newTermName("apply")),
+      val p = Apply(Select(Ident(mod), TermName("setParams")),
+        List(Apply(Select(Ident(TermName("List")), TermName("apply")),
           names.map(pair =>
-            Ident(pair._1)).toList)))
-      val b = Apply(Select(Ident(mod), newTermName("setBlocks")),
-        List(Apply(Select(Ident("List"), newTermName("apply")),
+            Ident(pair._1)))))
+      val b = Apply(Select(Ident(mod), TermName("setBlocks")),
+        List(Apply(Select(Ident(TermName("List")), TermName("apply")),
           blocks.map(_.tree).toList)))
-      val db = Apply(Apply(Select(Ident(newTermName("currentMod")),
-        newTermName("withValue")), List(Ident(mod))), List(Block(List(p), b)))
+      val db = Apply(Apply(Select(Ident(TermName("currentMod")),
+        TermName("withValue")), List(Ident(mod))), List(Block(List(p), b)))
       c.Expr[HDLModule](Block(l ++ List(r, d, db), Ident(mod)))
     }
 
@@ -594,39 +595,39 @@ object HDLBase {
         var names: List[(TermName, Int)] = List()
         c.enclosingClass match {
           case ClassDef(_, className, _, Template(_, _, params)) =>
-            params.map((param) => param match {
+            params.foreach {
               case DefDef(_, name, _, params, _, _) =>
                 if (name == termNames.CONSTRUCTOR)
-                  params(0).map(
+                  params.head.map(
                     (param) => param match {
                       case ValDef(_, name,
-                        AppliedTypeTree(Ident(typeName), inner), _) =>
+                      AppliedTypeTree(Ident(typeName), inner), _) =>
                         // 0 for HDL[T]
-                        if (typeName == newTypeName("HDL"))
+                        if (typeName == TypeName("HDL"))
                           names = (name, 0) :: names
                         // 1 for List[HDL[T]]
-                        else if (typeName == newTypeName("List"))
+                        else if (typeName == TypeName("List"))
                           inner match {
                             case List(AppliedTypeTree(Ident(typeName2), _)) =>
-                              if (typeName2 == newTypeName("HDL"))
+                              if (typeName2 == TypeName("HDL"))
                                 names = (name, 1) :: names
                             case _ => ()
                           }
                       case _ => ()
                     })
               case _ => ()
-            })
+            }
             constructModule(moduleName, names.reverse)
         }
       case DefDef(_, moduleName, _, params, _, _) =>
-        val names = params(0).map((param) => param match {
+        val names = params.head.map((param) => param match {
           case ValDef(_, name, _, _) => name
         })
         constructModule(moduleName, names.map(name => (name, 0)))
       case _ =>
         c.Expr[HDLModule](
-          Apply(Select(New(Ident(newTypeName("HDLModule"))),
-            nme.CONSTRUCTOR),
+          Apply(Select(New(Ident(TypeName("HDLModule"))),
+            termNames.CONSTRUCTOR),
             List(Literal(Constant("")), Literal(Constant(null)))))
     }
   }
