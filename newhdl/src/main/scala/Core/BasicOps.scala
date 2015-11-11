@@ -1,7 +1,6 @@
 package NewHDL.Core
 
-//import scala.reflect.macros.Context
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.blackbox
 import scala.language.experimental.macros
 import scala.annotation.tailrec
 import scala.collection.mutable.Stack
@@ -545,7 +544,7 @@ object HDLBase {
     }
   }
 
-  def moduleImpl(c: whitebox.Context)(blocks: c.Expr[HDLBlock]*):
+  def moduleImpl(c: blackbox.Context)(blocks: c.Expr[HDLBlock]*):
       c.Expr[HDLModule] = {
     import c.universe._
     def constructModule(moduleName: Name, names: List[(TermName, Int)]) = {
@@ -887,13 +886,13 @@ object HDLBase {
       m.params.map((p) =>
         (if (p.out) "output " else "input ")
           + p.signedString + p.lengthString + p.getName +
-          ";\n").toList.sorted.mkString("") +
+          ";\n").sorted.mkString("") +
       regs.map(p => "reg " +
         p.signedString + p.lengthString +
-        p.getName + p.sizeString + ";\n").toList.sorted.mkString("") +
+        p.getName + p.sizeString + ";\n").sorted.mkString("") +
       m.internalRegs.map((r) =>
         "reg " + r.signedString + r.lengthString + r.getName + r.sizeString +
-          ";\n").toList.sorted.mkString("") +
+          ";\n").sorted.mkString("") +
       "\ninitial begin\n" + (regs ++ m.internalRegs).map(
         _.initDecl).sorted.mkString("") + "end\n\n"
     }
