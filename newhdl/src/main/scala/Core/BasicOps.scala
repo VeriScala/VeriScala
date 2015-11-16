@@ -1,5 +1,7 @@
 package NewHDL.Core
 
+import NewHDL.Core.HDLBase.HDLClass
+
 import scala.reflect.macros.blackbox
 import scala.language.experimental.macros
 import scala.annotation.tailrec
@@ -500,6 +502,7 @@ object HDLBase {
     val name = _name
     private var _params: List[HDLReg[Any]] = List()
     private var _blocks: List[HDLBlock] = List()
+    private var _externalModule: List[HDLClass] = List()
     var internalRegs: List[HDLReg[Any]] = List()
     var analyzed = false
 
@@ -542,6 +545,13 @@ object HDLBase {
     def addBlock(block: HDLBlock) {
       _blocks = block :: _blocks
     }
+
+    def addExternalModule(externalModule: HDLClass): HDLModule = {
+      _externalModule = externalModule :: _externalModule
+      this
+    }
+
+    def externalModule = _externalModule
   }
 
   def moduleImpl(c: blackbox.Context)(blocks: c.Expr[HDLBlock]*):
@@ -633,7 +643,8 @@ object HDLBase {
 
   abstract class HDLBaseClass
 
-  abstract class HDLClass extends HDLBaseClass with BasicOps with Compiler with NetworkOps
+  //abstract class HDLClass extends HDLBaseClass with BasicOps with Compiler with NetworkOps
+  abstract class HDLClass extends HDLBaseClass with BasicOps with Compiler
 
   trait Base {
     // Arithmetic related.
@@ -897,9 +908,24 @@ object HDLBase {
         _.initDecl).sorted.mkString("") + "end\n\n"
     }
 
+
+    protected def refExternalModule(m: List[HDLClass]): String = {
+      val HDLRegInstance = HDL(false)
+      val RegType: String = HDLRegInstance.getClass.getTypeName
+      m.map((p) =>
+        p.getClass.getSimpleName +
+        "(" +
+        p.getClass.getDeclaredFields.map((f) =>
+          if (f.getType.getName == RegType) "somePara" else "").mkString(",") +
+        ")" +
+        "\n"
+      ).mkString("")
+    }
+
+
     def compile(m: HDLModule): String = {
       moduleDeclaration(m,
-        registerDeclaration(m) +
+        registerDeclaration(m) + refExternalModule(m.externalModule) + "\n" +
         (for (block <- m.blocks) yield compile(block)).mkString("\n"))
     }
   }

@@ -36,6 +36,7 @@ class AdderTest extends FunSuite {
     val bench = new AdderTestBench(clk, b0,
       Unsigned(0, 4), Unsigned(0, 4), z, A, B)
 
+    /*
     val conf : Config = ConfigFactory.load()
 
     bench.udpcore_on_off = true
@@ -53,6 +54,7 @@ class AdderTest extends FunSuite {
     }).run()
 
     bench.udpcore_send("CLOSE")
+    */
 
     bench since 0 until 14 every 2 run {
       assert(clk === 0)
