@@ -42,9 +42,9 @@ class Calc(clk: HDL[Boolean], rst: HDL[Boolean],
 object Main {
   def main(args: Array[String]) {
     val width = 32
-    println((new Calc(b0, b0,
+    new Calc(b0, b0,
       Unsigned(0, width), Unsigned(0, width), Unsigned(0, width),
       List(Unsigned(0, width), Unsigned(0, width)),
-      math.pow(2, 11).toInt)).compile)
+      math.pow(2, 11).toInt).compile.toConsole
   }
 }

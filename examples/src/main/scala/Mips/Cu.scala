@@ -145,9 +145,9 @@ class Cu(op:HDL[Unsigned],func:HDL[Unsigned],z:HDL[Boolean],
 
 object Main{
   def main(args:Array[String]): Unit ={
-    println(new Cu(Unsigned(0,6),Unsigned(0,6),b0,
+    new Cu(Unsigned(0,6),Unsigned(0,6),b0,
     b0, b0, b0, b0,Unsigned(0,4), b0,
-    b1, Unsigned(0,2), b0, b0).compile)
+    b1, Unsigned(0,2), b0, b0).compile.toConsole
   }
 
 }

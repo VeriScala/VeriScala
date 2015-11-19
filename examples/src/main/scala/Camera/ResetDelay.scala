@@ -36,6 +36,6 @@ class ResetDelay(iCLK:HDL[Boolean],iRST:HDL[Boolean],oRST_0:HDL[Boolean],oRST_1:
 
 object Main{
   def main(args: Array[String]): Unit ={
-    println(new ResetDelay(b0,b0,b0,b0,b0).compile)
+    new ResetDelay(b0,b0,b0,b0,b0).compile.toConsole
   }
 }

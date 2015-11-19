@@ -49,7 +49,7 @@ class Regfile (rna:HDL[Unsigned],rnb:HDL[Unsigned],
 
 object Main{
   def main (args: Array[String]): Unit ={
-    println (new Regfile(Unsigned(0,5),Unsigned(0,5),Unsigned(0,32),
-    Unsigned(0,5),b0,b0,b0,Unsigned(0,32),Unsigned(0,32),31,32).compile)
+    new Regfile(Unsigned(0,5),Unsigned(0,5),Unsigned(0,32),
+    Unsigned(0,5),b0,b0,b0,Unsigned(0,32),Unsigned(0,32),31,32).compile.toConsole
   }
 }

@@ -47,6 +47,6 @@ class SEG7LUT(oSEG:HDL[Unsigned],iDIG:HDL[Unsigned]) extends HDLClass{
 
 object Main{
   def main(args: Array[String]): Unit ={
-    println(new SEG7LUT(Unsigned(0,7),Unsigned(0,4)).compile)
+    new SEG7LUT(Unsigned(0,7),Unsigned(0,4)).compile.toConsole
   }
 }

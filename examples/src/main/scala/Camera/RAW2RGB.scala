@@ -61,7 +61,7 @@ class RAW2RGB(oRed:HDL[Unsigned],oGreen:HDL[Unsigned],oBlue:HDL[Unsigned],oDVAL:
 
 object Main{
   def main(args: Array[String]): Unit ={
-    println(new RAW2RGB(Unsigned(0,12),Unsigned(0,12),Unsigned(0,12),b0,Unsigned(0,11),
-    Unsigned(0,11),Unsigned(0,12),b0,b0,b0).compile)
+    new RAW2RGB(Unsigned(0,12),Unsigned(0,12),Unsigned(0,12),b0,Unsigned(0,11),
+    Unsigned(0,11),Unsigned(0,12),b0,b0,b0).compile.toConsole
   }
 }

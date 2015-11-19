@@ -18,6 +18,6 @@ object Main {
   def main(args: Array[String]) {
     val handle_Adder = new ComplexAdder(false, false,
       ComplexNumber(0, 5, 0, 5), ComplexNumber(1, 5, 2, 5), ComplexNumber(0, 6, 0, 6))
-    println(handle_Adder.compile)
+    handle_Adder.compile.toConsole
   }
 }

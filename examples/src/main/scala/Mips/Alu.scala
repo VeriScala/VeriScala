@@ -79,7 +79,7 @@ class Alu (a: HDL[Unsigned], b:HDL[Unsigned], aluc:HDL[Unsigned],
 
 object Main{
   def main(args: Array[String]): Unit ={
-    println(new Alu(Unsigned(0,32),Unsigned(0,32),Unsigned(0,4),
-    Unsigned(0,32),b0).compile)
+    new Alu(Unsigned(0,32),Unsigned(0,32),Unsigned(0,4),
+    Unsigned(0,32),b0).compile.toConsole
   }
 }

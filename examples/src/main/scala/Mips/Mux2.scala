@@ -39,7 +39,7 @@ class Mux2 (a0:HDL[Unsigned],a1:HDL[Unsigned],
 
 object Main {
   def main(args:Array[String]): Unit ={
-    println(new Mux2(Unsigned(0,32),Unsigned(0,32),
-    b0,Unsigned(0,32)).compile)
+    new Mux2(Unsigned(0,32),Unsigned(0,32),
+    b0,Unsigned(0,32)).compile.toConsole
   }
 }

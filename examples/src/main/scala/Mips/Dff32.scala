@@ -42,6 +42,6 @@ class Dff32 (d:HDL[Unsigned],clk:HDL[Boolean],
 
 object Main{
   def main(args: Array[String]): Unit ={
-    println(new Dff32(Unsigned(0,32),b0,b0,Unsigned(0,32)).compile)
+    new Dff32(Unsigned(0,32),b0,b0,Unsigned(0,32)).compile.toConsole
   }
 }

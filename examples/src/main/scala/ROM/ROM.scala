@@ -19,7 +19,7 @@ object Main {
     val wl_addr = 2
     val wl_data = 3
     val data_list = List(2, 3, 6, 7).map(Unsigned(_, wl_data))
-    println(new ROM(false,
-      Unsigned(0, wl_addr), Unsigned(0, wl_data), data_list).compile)
+    new ROM(false,
+      Unsigned(0, wl_addr), Unsigned(0, wl_data), data_list).compile.toConsole
   }
 }

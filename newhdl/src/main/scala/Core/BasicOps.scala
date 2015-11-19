@@ -1,14 +1,13 @@
 package NewHDL.Core
 
-import NewHDL.Core.HDLBase.HDLClass
-
 import scala.reflect.macros.blackbox
 import scala.language.experimental.macros
 import scala.annotation.tailrec
-import scala.collection.mutable.{ArrayBuffer, Stack}
+import scala.collection.mutable.Stack
 import scala.util.DynamicVariable
 import scala.math.pow
 import java.net.{DatagramPacket, DatagramSocket, InetAddress}
+import java.io.{File, PrintWriter}
 import com.typesafe.config._
 
 import NewHDL.Exceptions.NotEnoughBitsException
@@ -710,6 +709,22 @@ object HDLBase {
   //abstract class HDLClass extends HDLBaseClass with BasicOps with Compiler with NetworkOps
   abstract class HDLClass extends HDLBaseClass with BasicOps with Compiler
 
+  class CompileOutput(genCode: String) {
+    override def toString = genCode
+
+    def toConsole: CompileOutput = {
+      println(genCode)
+      this
+    }
+
+    def toFile(filename: String): CompileOutput = {
+      val writer = new PrintWriter(new File(filename))
+      writer.print(genCode)
+      writer.close
+      this
+    }
+  }
+
   trait Base {
     // Arithmetic related.
 
@@ -854,8 +869,8 @@ object HDLBase {
   trait Compiler extends Base {
     val toCompile: List[HDLModule] = List()
 
-    def compile: String =
-      (for (module <- toCompile) yield compile(module)).mkString("")
+    def compile: CompileOutput =
+      new CompileOutput((for (module <- toCompile) yield compile(module)).mkString(""))
 
     protected def compile[T](exp: HDLExp[T]): String = exp match {
       case HDLWhen(conditions) =>
@@ -877,11 +892,17 @@ object HDLBase {
         compile(l) + " != " + compile(r)
       case HDLAssign(lhs, rhs) =>
         (lhs, rhs) match {
-          case (lhs: HDLCTypeReg[ComplexNumber], rhs: HDLAdd[HDLCTypeReg[ComplexNumber]]) =>
+          case (lhs: HDLCTypeReg[ComplexNumber], rhs: HDLExp[HDLCTypeReg[ComplexNumber]]) =>
             rhs match {
               case HDLAdd(x: HDLCTypeReg[ComplexNumber], y: HDLCTypeReg[ComplexNumber]) =>
-                lhs.getName(0) + " <= (" + x.getName(0) + " + " + y.getName(0) + ")\n" +
-                lhs.getName(1) + " <= (" + x.getName(1) + " + " + y.getName(1) + ")\n"
+                lhs.getName(0) + " <= (" + x.getName(0) + " + " + y.getName(0) + ");\n" +
+                lhs.getName(1) + " <= (" + x.getName(1) + " + " + y.getName(1) + ");\n"
+              case HDLSub(x: HDLCTypeReg[ComplexNumber], y: HDLCTypeReg[ComplexNumber]) =>
+                lhs.getName(0) + " <= (" + x.getName(0) + " - " + y.getName(0) + ");\n" +
+                lhs.getName(1) + " <= (" + x.getName(1) + " - " + y.getName(1) + ");\n"
+              case HDLMul(x: HDLCTypeReg[ComplexNumber], y: HDLCTypeReg[ComplexNumber]) =>
+                lhs.getName(0) + " <= (" + x.getName(0) + " * " + y.getName(0) + " - " + x.getName(1) + " * " + y.getName(1) +");\n" +
+                lhs.getName(1) + " <= (" + x.getName(1) + " * " + y.getName(0) + " + " + x.getName(0) + " * " + y.getName(1) +");\n"
             }
           case (_, HDLValueListElem(lst, idx)) =>
             val l = lst.lst
@@ -895,13 +916,7 @@ object HDLBase {
       case HDLRev(x) =>
         "~" + compile(x)
       case HDLAdd(x, y) =>
-        (x, y) match {
-          case (x: HDLCTypeReg[ComplexNumber], y: HDLCTypeReg[ComplexNumber]) =>
-            "(" + x.getName(0) + "+" + y.getName(0) + ")\n" +
-            "(" + x.getName(1) + "+" + y.getName(1) + ")\n"
-          case _ =>
-            "(" + compile(x) + " + " + compile(y) + ")"
-        }
+        "(" + compile(x) + " + " + compile(y) + ")"
       case HDLSub(x, y) =>
         "(" + compile(x) + " - " + compile(y) + ")"
       case HDLMul(x, y) =>

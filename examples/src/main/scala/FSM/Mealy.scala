@@ -66,9 +66,9 @@ class Mealy[T](clk: HDL[Boolean], rst: HDL[Boolean],
 
 object Main {
   def main(args: Array[String]) {
-    println(new Mealy(b0, b0,
+    new Mealy(b0, b0,
       b0, b0,
       b0, b0, b0,
-      b0, b0, b0).compile)
+      b0, b0, b0).compile.toConsole
   }
 }

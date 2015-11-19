@@ -188,7 +188,7 @@ class Hashmap(reset:HDL[Boolean],clock:HDL[Boolean],set:HDL[Boolean],
 
 object Main{
   def main(args: Array[String]): Unit ={
-    println(new Hashmap(b0, b0, b0, Unsigned(0,16),Unsigned(0,16),Unsigned(0,2),Unsigned(0,16),
-    Unsigned(0,4),b0,256,16,8).compile)
+    new Hashmap(b0, b0, b0, Unsigned(0,16),Unsigned(0,16),Unsigned(0,2),Unsigned(0,16),
+    Unsigned(0,4),b0,256,16,8).compile.toConsole
   }
 }
