@@ -5,7 +5,7 @@ import NewHDL.Core.HDLBase.HDLClass
 import scala.reflect.macros.blackbox
 import scala.language.experimental.macros
 import scala.annotation.tailrec
-import scala.collection.mutable.Stack
+import scala.collection.mutable.{ArrayBuffer, Stack}
 import scala.util.DynamicVariable
 import scala.math.pow
 import java.net.{DatagramPacket, DatagramSocket, InetAddress}
@@ -23,6 +23,8 @@ object HDLBase {
 
   type HDL[T] = HDLReg[T]
   def HDL[T](x: T) = new HDLReg[T](x)
+  type CHDL[T] = HDLCTypeReg[T]
+  def CHDL[T](x: T) = new HDLCTypeReg[T](x)
 
   def hdlval(x: Any): Int = x match {
     case Signed(s, _) => s
@@ -207,6 +209,9 @@ object HDLBase {
     def toRegisters(name: String): List[Register]
   }
 
+  // C means custom type
+  abstract class HDLCType extends HDLType
+
   abstract class HDLPrimitive(
     val value: Int, val length: Int, val signed: Boolean) extends HDLType {
 
@@ -267,9 +272,28 @@ object HDLBase {
     override def getName = "Unsigned(" + value + ")"
   }
 
+  case class ComplexNumber(valueA: Int, lengthA: Int, valueB: Int, lengthB: Int) extends HDLCType with Arithable {
+    def getName: String = "ComplexNumber(" + valueA + "+" + valueB + "i)"
+    var A = Signed(valueA, lengthA)
+    var B = Signed(valueB, lengthB)
+    var regA = HDL(A)
+    var regB = HDL(B)
+    def getRegA = regA
+    def getRegB = regB
+
+    override def toString = getName
+
+    override def toRegisters = List(
+      A.toRegisters.head, B.toRegisters.head)
+    override def toRegisters(name: String) = List(
+      A.toRegisters(name+"A").head, B.toRegisters(name+"B").head)
+
+  }
+
   implicit def list2hdlvaluelist[T](x: List[T]): HDLValueList[T] =
     HDLValueList(x.map(any2hdl(_)))
   implicit def any2hdl[T](x: => T): HDLReg[T] = new HDLReg[T](x)
+  implicit def any2chdl[T <: HDLCType](x: => T): HDLCTypeReg[T] = new HDLCTypeReg[T](x)
   implicit def int2hdlsigned(x: => Int): HDLReg[Signed] = new HDLReg(Signed(x,
     HDLPrimitive.getSignedSize(x)))
 
@@ -472,6 +496,46 @@ object HDLBase {
         getName == reg.getName && value == reg.value &&
         length == reg.length && signed == reg.signed
     }
+  }
+
+  // CType means custom type
+  class HDLCTypeReg[+T](_value: => T)
+      extends HDLDef[T] {
+
+    var name: Vector[String] = Vector.empty
+    var out: Boolean = false
+    var reg: Boolean = true
+
+    def setName(_name: String) = _value match {
+      case _value: ComplexNumber =>
+        name = Vector[String](_name+"A", _name+"B")
+    }
+
+    def getName(index: Int) = _value match {
+      case _value: ComplexNumber => {
+        if (name.length < 2) {
+          _value.toString
+        } else if (index == 0) {
+          name(0)
+        } else if (index == 1) {
+          name(1)
+        } else {
+          _value.toString
+        }
+      }
+    }
+
+    def getReg(index: Int) = _value match {
+      case _value: ComplexNumber => {
+        if (index == 0) {
+          _value.getRegA
+        } else if (index == 1) {
+          _value.getRegB
+        }
+      }
+    }
+
+    def registers: List[Register] = List()
   }
 
   case class HDLListElem[T](lst: HDLReg[T], idx: HDLExp[Unsigned])
@@ -812,8 +876,14 @@ object HDLBase {
       case HDLNotEquals(l, r) =>
         compile(l) + " != " + compile(r)
       case HDLAssign(lhs, rhs) =>
-        rhs match {
-          case HDLValueListElem(lst, idx) =>
+        (lhs, rhs) match {
+          case (lhs: HDLCTypeReg[ComplexNumber], rhs: HDLAdd[HDLCTypeReg[ComplexNumber]]) =>
+            rhs match {
+              case HDLAdd(x: HDLCTypeReg[ComplexNumber], y: HDLCTypeReg[ComplexNumber]) =>
+                lhs.getName(0) + " <= (" + x.getName(0) + " + " + y.getName(0) + ")\n" +
+                lhs.getName(1) + " <= (" + x.getName(1) + " + " + y.getName(1) + ")\n"
+            }
+          case (_, HDLValueListElem(lst, idx)) =>
             val l = lst.lst
             val s = l.indices.map(i =>
               List(i, ": ", compile(lhs),
@@ -825,7 +895,13 @@ object HDLBase {
       case HDLRev(x) =>
         "~" + compile(x)
       case HDLAdd(x, y) =>
-        "(" + compile(x) + " + " + compile(y) + ")"
+        (x, y) match {
+          case (x: HDLCTypeReg[ComplexNumber], y: HDLCTypeReg[ComplexNumber]) =>
+            "(" + x.getName(0) + "+" + y.getName(0) + ")\n" +
+            "(" + x.getName(1) + "+" + y.getName(1) + ")\n"
+          case _ =>
+            "(" + compile(x) + " + " + compile(y) + ")"
+        }
       case HDLSub(x, y) =>
         "(" + compile(x) + " - " + compile(y) + ")"
       case HDLMul(x, y) =>
