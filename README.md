@@ -1,4 +1,7 @@
 # VeriScala
+
+[![Build Status](https://travis-ci.org/ScalaHDL/VeriScala.svg?branch=master)](https://travis-ci.org/ScalaHDL/VeriScala)
+
 VeriScala is a tool that you can write Scala code to generate Verilog code run on FPGA in order to:
 
 * Use less time write code on FPGA
