@@ -1,7 +1,6 @@
-package ComplexNumber
+package NewHDLExample.ComplexNumber.Add
 
 import NewHDL.Core.HDLBase._
-
 
 class ComplexAdder[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
   a: CHDL[T], b: CHDL[T], z: CHDL[T]) extends HDLClass {

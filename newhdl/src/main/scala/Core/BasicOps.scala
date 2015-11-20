@@ -419,6 +419,7 @@ object HDLBase {
       case Seq(a, _*) => a.length
       case p: HDLPrimitive => p.length
       case b: Boolean => 1
+      case r: HDLCTypeReg[ComplexNumber] => 1
     }
 
     def lengthString =
@@ -430,6 +431,7 @@ object HDLBase {
         a.signed
       case p: HDLPrimitive => p.signed
       case b: Boolean => false
+      case r: HDLCTypeReg[ComplexNumber] => false
     }
 
     def signedString =
@@ -504,25 +506,31 @@ object HDLBase {
     var name: Vector[String] = Vector.empty
     var out: Boolean = false
     var reg: Boolean = true
+    var exist: Boolean = true
 
     def setName(_name: String) = _value match {
       case _value: ComplexNumber =>
-        name = Vector[String](_name+"A", _name+"B")
+        name = Vector[String](_name, _name+"A", _name+"B")
     }
 
     def getName(index: Int) = _value match {
       case _value: ComplexNumber => {
-        if (name.length < 2) {
+        if (name.length < 3) {
           _value.toString
-        } else if (index == 0) {
-          name(0)
-        } else if (index == 1) {
-          name(1)
+        } else if (index <= 2) {
+          name(index)
         } else {
           _value.toString
         }
       }
     }
+
+    def getAllName = _value match {
+      case _value: ComplexNumber =>
+        List[String](name(1), name(2))
+    }
+
+    override def toString = "HDLCTypeReg " + getName(0)
 
     def getReg(index: Int) = _value match {
       case _value: ComplexNumber => {
@@ -532,6 +540,37 @@ object HDLBase {
           _value.getRegB
         }
       }
+    }
+
+    def signedString(index: Int) = _value match {
+      case _value: ComplexNumber => {
+        if (index == 0 && _value.getRegA.signed) {
+          "signed"
+        } else if (index == 1 && _value.getRegB.signed) {
+          "signed"
+        } else {
+          ""
+        }
+      }
+    }
+
+    def lengthString(index: Int) = _value match {
+      case _value: ComplexNumber => {
+        if (index == 0) {
+          _value.getRegA.lengthString
+        } else if (index == 1) {
+          _value.getRegB.lengthString
+        } else {
+          ""
+        }
+      }
+    }
+
+    override def :=[S >: T](rhs: HDLExp[S]) = {
+      out = true
+      val a = HDLAssign[S](this, rhs)
+      addExp(a)
+      a
     }
 
     def registers: List[Register] = List()
@@ -564,6 +603,7 @@ object HDLBase {
 
     val name = _name
     private var _params: List[HDLReg[Any]] = List()
+    private var _cparams: List[HDLCTypeReg[Any]] = List()
     private var _blocks: List[HDLBlock] = List()
     private var _externalModule: List[HDLClass] = List()
     var internalRegs: List[HDLReg[Any]] = List()
@@ -592,12 +632,14 @@ object HDLBase {
       params.foreach {
         case reg: HDLReg[Any] =>
           _params = reg :: _params
-        case lst: List[HDLReg[Any]] =>
-          _params = lst.reverse ++ _params
+        case creg: HDLCTypeReg[Any] =>
+          _cparams = creg :: _cparams
       }
     }
 
     def params = _params.reverse
+
+    def cparams = _cparams.reverse
 
     def setBlocks(blocks: List[HDLBlock]) {
       _blocks = blocks.reverse
@@ -675,13 +717,13 @@ object HDLBase {
                       case ValDef(_, name,
                       AppliedTypeTree(Ident(typeName), inner), _) =>
                         // 0 for HDL[T]
-                        if (typeName == TypeName("HDL"))
+                        if (typeName == TypeName("HDL") || typeName == TypeName("CHDL"))
                           names = (name, 0) :: names
                         // 1 for List[HDL[T]]
                         else if (typeName == TypeName("List"))
                           inner match {
                             case List(AppliedTypeTree(Ident(typeName2), _)) =>
-                              if (typeName2 == TypeName("HDL"))
+                              if (typeName2 == TypeName("HDL") || typeName == TypeName("CHDL"))
                                 names = (name, 1) :: names
                             case _ => ()
                           }
@@ -895,14 +937,14 @@ object HDLBase {
           case (lhs: HDLCTypeReg[ComplexNumber], rhs: HDLExp[HDLCTypeReg[ComplexNumber]]) =>
             rhs match {
               case HDLAdd(x: HDLCTypeReg[ComplexNumber], y: HDLCTypeReg[ComplexNumber]) =>
-                lhs.getName(0) + " <= (" + x.getName(0) + " + " + y.getName(0) + ");\n" +
-                lhs.getName(1) + " <= (" + x.getName(1) + " + " + y.getName(1) + ");\n"
+                lhs.getName(1) + " <= (" + x.getName(1) + " + " + y.getName(1) + ");\n" +
+                lhs.getName(2) + " <= (" + x.getName(2) + " + " + y.getName(2) + ");"
               case HDLSub(x: HDLCTypeReg[ComplexNumber], y: HDLCTypeReg[ComplexNumber]) =>
-                lhs.getName(0) + " <= (" + x.getName(0) + " - " + y.getName(0) + ");\n" +
-                lhs.getName(1) + " <= (" + x.getName(1) + " - " + y.getName(1) + ");\n"
+                lhs.getName(1) + " <= (" + x.getName(1) + " - " + y.getName(1) + ");\n" +
+                lhs.getName(2) + " <= (" + x.getName(2) + " - " + y.getName(2) + ");"
               case HDLMul(x: HDLCTypeReg[ComplexNumber], y: HDLCTypeReg[ComplexNumber]) =>
-                lhs.getName(0) + " <= (" + x.getName(0) + " * " + y.getName(0) + " - " + x.getName(1) + " * " + y.getName(1) +");\n" +
-                lhs.getName(1) + " <= (" + x.getName(1) + " * " + y.getName(0) + " + " + x.getName(0) + " * " + y.getName(1) +");\n"
+                lhs.getName(1) + " <= (" + x.getName(1) + " * " + y.getName(1) + " - " + x.getName(2) + " * " + y.getName(2) +");\n" +
+                lhs.getName(2) + " <= (" + x.getName(2) + " * " + y.getName(1) + " + " + x.getName(1) + " * " + y.getName(2) +");"
             }
           case (_, HDLValueListElem(lst, idx)) =>
             val l = lst.lst
@@ -978,8 +1020,15 @@ object HDLBase {
 
     protected def moduleDeclaration(m: HDLModule, content: String): String = {
       val paramNames = m.params.map(_.getName)
+      var cparamNames = m.cparams.map(_.getAllName)
+      var allParamNames = paramNames
+      while (cparamNames.nonEmpty) {
+        allParamNames = allParamNames ++ cparamNames.head
+        cparamNames = cparamNames.tail
+      }
+
       List("module ", m.name,
-        "(\n", paramNames.mkString(",\n"), "\n);\n\n",
+        "(\n", allParamNames.mkString(",\n"), "\n);\n\n",
         content, "\nendmodule\n").mkString("")
     }
 
@@ -989,6 +1038,12 @@ object HDLBase {
         (if (p.out) "output " else "input ")
           + p.signedString + p.lengthString + p.getName +
           ";\n").sorted.mkString("") +
+      m.cparams.map((p) =>
+          (if (p.out) "output " else "input ") +
+          p.signedString(0) + p.lengthString(0) + p.getName(1) + ";\n" +
+          (if (p.out) "output " else "input ") +
+          p.signedString(1) + p.lengthString(1) + p.getName(2) + ";\n"
+      ).sorted.mkString("") +
       regs.map(p => "reg " +
         p.signedString + p.lengthString +
         p.getName + p.sizeString + ";\n").sorted.mkString("") +
