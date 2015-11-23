@@ -3,11 +3,20 @@ package NewHDLExample.Inherit.Child
 import NewHDL.Core.HDLBase._
 import NewHDLExample.Inherit.Parent.Parent
 
-// Not Complete
 class Child[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
-  a: HDL[T], b: HDL[T], z: HDL[T], ex: HDL[T]) extends Parent(clk, rst, a, b, ex) {
+  a: HDL[T], b: HDL[T], ex: HDL[T], d: HDL[T]) extends Parent(clk, rst, a, b, d) {
 
-  override val toCompile = List(add)
+  def sub = module {
+    sync(clk, 1) {
+      when (rst) {
+        ex := 0
+      } .otherwise {
+        ex := a + b
+      }
+    }
+  }
+
+  override val toCompile = List(add, sub)
 }
 
 object Main {

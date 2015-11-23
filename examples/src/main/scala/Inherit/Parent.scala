@@ -2,7 +2,6 @@ package NewHDLExample.Inherit.Parent
 
 import NewHDL.Core.HDLBase._
 
-// Not Complete
 class Parent[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
   a: HDL[T], b: HDL[T], z: HDL[T]) extends HDLClass {
   def add = module {
