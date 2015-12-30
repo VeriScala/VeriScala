@@ -1,26 +1,16 @@
 package Mips.Mux4
 
 import NewHDL.Core.HDLBase._
-
+import Mips.Mux2.Mux2
 
 class Mux4 (a0:HDL[Unsigned],a1:HDL[Unsigned],
-              a2:HDL[Unsigned],a3:HDL[Unsigned],
-               s:HDL[Unsigned],y:HDL[Unsigned]) extends HDLClass {
+  a2:HDL[Unsigned],a3:HDL[Unsigned],
+  s:HDL[Unsigned],y:HDL[Unsigned]) extends Mux2(a0, a1, s, y) {
 
   def mux4(a0:HDL[Unsigned],a1:HDL[Unsigned],
-              a2:HDL[Unsigned],a3:HDL[Unsigned],
-              s:HDL[Unsigned],y:HDL[Unsigned]) ={
-    async {
-      when(s is 0) {
-        y := a0
-      }.elsewhen(s is 1){
-        y := a1
-      }.elsewhen(s is 2){
-        y := a2
-      }.otherwise {
-        y := a3
-      }
-    }
+    a2:HDL[Unsigned],a3:HDL[Unsigned],
+    s:HDL[Unsigned],y:HDL[Unsigned]) = {
+    mux(List(a0, a1, a2, a3), List(0, 1, 2), s, y)
   }
 
   def mux4_module = module{

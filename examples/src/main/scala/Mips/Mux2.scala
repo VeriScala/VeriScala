@@ -17,17 +17,24 @@ import NewHDL.Core.HDLBase._
 
 
 class Mux2 (a0:HDL[Unsigned],a1:HDL[Unsigned],
-                s:HDL[Boolean],y:HDL[Unsigned]) extends HDLClass {
+  s:HDL[Unsigned],y:HDL[Unsigned]) extends HDLClass {
 
-  def mux2(a0:HDL[Unsigned],a1:HDL[Unsigned],
-              s:HDL[Boolean],y:HDL[Unsigned]) ={
+  def mux(a: List[HDL[Unsigned]], l: List[Int],
+    s: HDL[Unsigned], y: HDL[Unsigned]) = {
     async {
-      when(s is 1) {
-        y := a1
-      }.otherwise {
-        y := a0
+      a.zip(l).tail.foldLeft(when (s is l(0)) {
+        y := a(0)
+      })((st, al) => st.elsewhen(s is al._2) {
+        y := al._1
+      }).otherwise {
+        y := a.last
       }
     }
+  }
+
+  def mux2(a0:HDL[Unsigned],a1:HDL[Unsigned],
+    s:HDL[Unsigned],y:HDL[Unsigned]) = {
+    mux(List(a0, a1), List(1), s, y)
   }
 
   def mux2_module = module{
@@ -40,6 +47,6 @@ class Mux2 (a0:HDL[Unsigned],a1:HDL[Unsigned],
 object Main {
   def main(args:Array[String]): Unit ={
     new Mux2(Unsigned(0,32),Unsigned(0,32),
-    b0,Unsigned(0,32)).compile.toConsole
+      u(0),Unsigned(0,32)).compile.toConsole
   }
 }
