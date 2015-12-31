@@ -642,7 +642,7 @@ object HDLBase {
     def cparams = _cparams.reverse
 
     def setBlocks(blocks: List[HDLBlock]) {
-      _blocks = blocks.reverse
+//      _blocks = blocks.reverse
     }
 
     def blocks = _blocks.reverse
