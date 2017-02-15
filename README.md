@@ -19,7 +19,7 @@ programming, parameterized types, type safety, test automation, etc. VeriScala e
 their hardware designs in Scala, generate Verilog code automatically and debug and test hardware design
 interactively in real FPGA environment. 
 
-Detail explanation is in the [paper](https://github.com/VeriScala/VeriScala/blob/master/VeriScala_Intro.pdf)
+Detailed explanation is in the [paper](https://github.com/VeriScala/VeriScala/blob/master/VeriScala_Intro.pdf)
 
 
 ### File Organization
