@@ -26,8 +26,6 @@ module alu (a,b,aluc,s,z);
       end
 endmodule
  */
-
-
 package Mips.Alu
 
 import NewHDL.Core.HDLBase._
@@ -50,15 +48,7 @@ class Alu (a: HDL[Unsigned], b:HDL[Unsigned], aluc:HDL[Unsigned],
         s := a ^ b
       }.elsewhen((aluc is 3) | (aluc is 11)){
         s := a * b
-      }/*.elsewhen(aluc == 6 | aluc == 14){
-        s := b << 16
-      }.elsewhen(aluc == 3){
-        s := b << a
-      }.elsewhen(aluc == 7){
-        s := b >> a
-      }.elsewhen(aluc == 15){
-        s := b >> a
-      }*/.otherwise{
+      }.otherwise{
         s := 0
       }
     }
@@ -79,7 +69,7 @@ class Alu (a: HDL[Unsigned], b:HDL[Unsigned], aluc:HDL[Unsigned],
 
 object Main{
   def main(args: Array[String]): Unit ={
-    new Alu(Unsigned(0,32),Unsigned(0,32),Unsigned(0,4),
-    Unsigned(0,32),b0).compile.toConsole
+    println(new Alu(Unsigned(0,32),Unsigned(0,32),Unsigned(0,4),
+    Unsigned(0,32),b0).compile)
   }
 }

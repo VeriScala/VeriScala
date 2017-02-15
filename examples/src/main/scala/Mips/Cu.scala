@@ -2,7 +2,6 @@ package Mips.Cu
 
 import NewHDL.Core.HDLBase._
 
-
 class Cu(op:HDL[Unsigned],func:HDL[Unsigned],z:HDL[Boolean],
           wmem:HDL[Boolean],
           wreg:HDL[Boolean],
@@ -52,7 +51,6 @@ class Cu(op:HDL[Unsigned],func:HDL[Unsigned],z:HDL[Boolean],
 
     val r_type = HDLlize(b0)
 
-
     async{
       r_type := logic2(b1,op,map("allones"))//logic(op,map("allones")).foldLeft(HDLBitwiseAnd(u(1),u(1)))((a,b) => a & b)//~(op(0)|op(1)|op(2)|op(3)|op(4)|op(5))
       i_add := logic2(r_type,func,map("i_add"))//logic(func,map("i_add")).foldLeft(HDLBitwiseAnd(u(1),r_type))((a,b) => a & b)//r_type&func(5)&(~func(4))&(~func(3))&(~func(2))&(~func(1))&(~func(0))
@@ -80,13 +78,10 @@ class Cu(op:HDL[Unsigned],func:HDL[Unsigned],z:HDL[Boolean],
       pcsource(1) := i_jr | i_j | i_jal
       pcsource(0) := (i_beq & z) | (i_bne & (~z)) | i_j | i_jal
 
-
       wreg := i_add | i_sub | i_and | i_or   | i_xor  |
         i_sll | i_srl | i_sra | i_addi | i_andi |
         i_ori | i_xori | i_lw | i_lui  | i_jal  |
         i_mul
-
-
 
       aluc(3) := i_sra
       aluc(2) := i_sub | i_or | i_ori | i_srl | i_sra | i_bne | i_beq | i_lui
@@ -145,9 +140,9 @@ class Cu(op:HDL[Unsigned],func:HDL[Unsigned],z:HDL[Boolean],
 
 object Main{
   def main(args:Array[String]): Unit ={
-    new Cu(Unsigned(0,6),Unsigned(0,6),b0,
+    println(new Cu(Unsigned(0,6),Unsigned(0,6),b0,
     b0, b0, b0, b0,Unsigned(0,4), b0,
-    b1, Unsigned(0,2), b0, b0).compile.toConsole
+    b1, Unsigned(0,2), b0, b0).compile)
   }
 
 }

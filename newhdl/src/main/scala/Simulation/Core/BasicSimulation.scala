@@ -439,4 +439,4 @@ trait SimulationUDPCore {
   }
 }
 
-trait SimulationSuite extends BasicSimulations with SimulationSchedule //with SimulationUDPCore
+trait SimulationSuite extends BasicSimulations with SimulationSchedule with SimulationUDPCore

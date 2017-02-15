@@ -71,11 +71,9 @@ class BitonicSort[T](clk: HDL[Boolean], rst: HDL[Boolean],
 
 object Main {
   def main(args: Array[String]) {
-    val n = 8
-    val width = 4
-    new BitonicSort[Unsigned](b0, b1,
-      (0 until n).map(_ => HDL(Unsigned(0, width))).toList,
-      (0 until n).map(_ => HDL(Unsigned(0, width))).toList,
-      Unsigned(0, width)).compile.toConsole
+    println((new BitonicSort[Unsigned](b0, b1,
+      (0 until 8).map(_ => HDL(Unsigned(0, 4))).toList,
+      (0 until 8).map(_ => HDL(Unsigned(0, 4))).toList,
+      Unsigned(0, 4))).compile)
   }
 }

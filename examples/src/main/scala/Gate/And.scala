@@ -19,6 +19,6 @@ class And[T](clk: HDL[Boolean], rst: HDL[Boolean],
 
 object Main {
   def main(args: Array[String]) {
-    new And(false, false, false, false, false).compile.toConsole
+    println(new And(false, false, false, false, false).compile)
   }
 }

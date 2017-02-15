@@ -1,5 +1,7 @@
 package NewHDL.Core
 
+import NewHDL.Core.HDLBase.HDLClass
+
 import scala.reflect.macros.blackbox
 import scala.language.experimental.macros
 import scala.annotation.tailrec
@@ -7,7 +9,6 @@ import scala.collection.mutable.Stack
 import scala.util.DynamicVariable
 import scala.math.pow
 import java.net.{DatagramPacket, DatagramSocket, InetAddress}
-import java.io.{File, PrintWriter}
 import com.typesafe.config._
 
 import NewHDL.Exceptions.NotEnoughBitsException
@@ -22,8 +23,6 @@ object HDLBase {
 
   type HDL[T] = HDLReg[T]
   def HDL[T](x: T) = new HDLReg[T](x)
-  type CHDL[T] = HDLCTypeReg[T]
-  def CHDL[T](x: T) = new HDLCTypeReg[T](x)
 
   def hdlval(x: Any): Int = x match {
     case Signed(s, _) => s
@@ -208,9 +207,6 @@ object HDLBase {
     def toRegisters(name: String): List[Register]
   }
 
-  // C means custom type
-  abstract class HDLCType extends HDLType
-
   abstract class HDLPrimitive(
     val value: Int, val length: Int, val signed: Boolean) extends HDLType {
 
@@ -237,7 +233,7 @@ object HDLBase {
     override def toRegisters(name: String) = List(
       new Register(name, value, length, false))
   }
-
+// error
   object HDLPrimitive {
     def getUnsignedSize(value: Int): Int = {
       value.abs.toBinaryString.length
@@ -271,28 +267,9 @@ object HDLBase {
     override def getName = "Unsigned(" + value + ")"
   }
 
-  case class ComplexNumber(valueA: Int, lengthA: Int, valueB: Int, lengthB: Int) extends HDLCType with Arithable {
-    def getName: String = "ComplexNumber(" + valueA + "+" + valueB + "i)"
-    var A = Signed(valueA, lengthA)
-    var B = Signed(valueB, lengthB)
-    var regA = HDL(A)
-    var regB = HDL(B)
-    def getRegA = regA
-    def getRegB = regB
-
-    override def toString = getName
-
-    override def toRegisters = List(
-      A.toRegisters.head, B.toRegisters.head)
-    override def toRegisters(name: String) = List(
-      A.toRegisters(name+"A").head, B.toRegisters(name+"B").head)
-
-  }
-
   implicit def list2hdlvaluelist[T](x: List[T]): HDLValueList[T] =
     HDLValueList(x.map(any2hdl(_)))
   implicit def any2hdl[T](x: => T): HDLReg[T] = new HDLReg[T](x)
-  implicit def any2chdl[T <: HDLCType](x: => T): HDLCTypeReg[T] = new HDLCTypeReg[T](x)
   implicit def int2hdlsigned(x: => Int): HDLReg[Signed] = new HDLReg(Signed(x,
     HDLPrimitive.getSignedSize(x)))
 
@@ -419,7 +396,6 @@ object HDLBase {
       case Seq(a, _*) => a.length
       case p: HDLPrimitive => p.length
       case b: Boolean => 1
-      case r: HDLCTypeReg[ComplexNumber] => 1
     }
 
     def lengthString =
@@ -431,7 +407,6 @@ object HDLBase {
         a.signed
       case p: HDLPrimitive => p.signed
       case b: Boolean => false
-      case r: HDLCTypeReg[ComplexNumber] => false
     }
 
     def signedString =
@@ -499,83 +474,6 @@ object HDLBase {
     }
   }
 
-  // CType means custom type
-  class HDLCTypeReg[+T](_value: => T)
-      extends HDLDef[T] {
-
-    var name: Vector[String] = Vector.empty
-    var out: Boolean = false
-    var reg: Boolean = true
-    var exist: Boolean = true
-
-    def setName(_name: String) = _value match {
-      case _value: ComplexNumber =>
-        name = Vector[String](_name, _name+"A", _name+"B")
-    }
-
-    def getName(index: Int) = _value match {
-      case _value: ComplexNumber => {
-        if (name.length < 3) {
-          _value.toString
-        } else if (index <= 2) {
-          name(index)
-        } else {
-          _value.toString
-        }
-      }
-    }
-
-    def getAllName = _value match {
-      case _value: ComplexNumber =>
-        List[String](name(1), name(2))
-    }
-
-    override def toString = "HDLCTypeReg " + getName(0)
-
-    def getReg(index: Int) = _value match {
-      case _value: ComplexNumber => {
-        if (index == 0) {
-          _value.getRegA
-        } else if (index == 1) {
-          _value.getRegB
-        }
-      }
-    }
-
-    def signedString(index: Int) = _value match {
-      case _value: ComplexNumber => {
-        if (index == 0 && _value.getRegA.signed) {
-          "signed"
-        } else if (index == 1 && _value.getRegB.signed) {
-          "signed"
-        } else {
-          ""
-        }
-      }
-    }
-
-    def lengthString(index: Int) = _value match {
-      case _value: ComplexNumber => {
-        if (index == 0) {
-          _value.getRegA.lengthString
-        } else if (index == 1) {
-          _value.getRegB.lengthString
-        } else {
-          ""
-        }
-      }
-    }
-
-    override def :=[S >: T](rhs: HDLExp[S]) = {
-      out = true
-      val a = HDLAssign[S](this, rhs)
-      addExp(a)
-      a
-    }
-
-    def registers: List[Register] = List()
-  }
-
   case class HDLListElem[T](lst: HDLReg[T], idx: HDLExp[Unsigned])
       extends HDLDef[T] {
     override def registers: List[Register] = lst.registers
@@ -603,7 +501,6 @@ object HDLBase {
 
     val name = _name
     private var _params: List[HDLReg[Any]] = List()
-    private var _cparams: List[HDLCTypeReg[Any]] = List()
     private var _blocks: List[HDLBlock] = List()
     private var _externalModule: List[HDLClass] = List()
     var internalRegs: List[HDLReg[Any]] = List()
@@ -632,17 +529,15 @@ object HDLBase {
       params.foreach {
         case reg: HDLReg[Any] =>
           _params = reg :: _params
-        case creg: HDLCTypeReg[Any] =>
-          _cparams = creg :: _cparams
+        case lst: List[HDLReg[Any]] =>
+          _params = lst.reverse ++ _params
       }
     }
 
     def params = _params.reverse
 
-    def cparams = _cparams.reverse
-
     def setBlocks(blocks: List[HDLBlock]) {
-//      _blocks = blocks.reverse
+      _blocks = blocks.reverse
     }
 
     def blocks = _blocks.reverse
@@ -717,13 +612,13 @@ object HDLBase {
                       case ValDef(_, name,
                       AppliedTypeTree(Ident(typeName), inner), _) =>
                         // 0 for HDL[T]
-                        if (typeName == TypeName("HDL") || typeName == TypeName("CHDL"))
+                        if (typeName == TypeName("HDL"))
                           names = (name, 0) :: names
                         // 1 for List[HDL[T]]
                         else if (typeName == TypeName("List"))
                           inner match {
                             case List(AppliedTypeTree(Ident(typeName2), _)) =>
-                              if (typeName2 == TypeName("HDL") || typeName == TypeName("CHDL"))
+                              if (typeName2 == TypeName("HDL"))
                                 names = (name, 1) :: names
                             case _ => ()
                           }
@@ -750,22 +645,6 @@ object HDLBase {
 
   //abstract class HDLClass extends HDLBaseClass with BasicOps with Compiler with NetworkOps
   abstract class HDLClass extends HDLBaseClass with BasicOps with Compiler
-
-  class CompileOutput(genCode: String) {
-    override def toString = genCode
-
-    def toConsole: CompileOutput = {
-      println(genCode)
-      this
-    }
-
-    def toFile(filename: String): CompileOutput = {
-      val writer = new PrintWriter(new File(filename))
-      writer.print(genCode)
-      writer.close
-      this
-    }
-  }
 
   trait Base {
     // Arithmetic related.
@@ -910,9 +789,10 @@ object HDLBase {
 
   trait Compiler extends Base {
     val toCompile: List[HDLModule] = List()
+    val interface: List[Tuple2[String, Int]] = List()
 
-    def compile: CompileOutput =
-      new CompileOutput((for (module <- toCompile) yield compile(module)).mkString(""))
+    def compile: String =
+      (for (module <- toCompile) yield compile(module)).mkString("")
 
     protected def compile[T](exp: HDLExp[T]): String = exp match {
       case HDLWhen(conditions) =>
@@ -933,20 +813,8 @@ object HDLBase {
       case HDLNotEquals(l, r) =>
         compile(l) + " != " + compile(r)
       case HDLAssign(lhs, rhs) =>
-        (lhs, rhs) match {
-          case (lhs: HDLCTypeReg[ComplexNumber], rhs: HDLExp[HDLCTypeReg[ComplexNumber]]) =>
-            rhs match {
-              case HDLAdd(x: HDLCTypeReg[ComplexNumber], y: HDLCTypeReg[ComplexNumber]) =>
-                lhs.getName(1) + " <= (" + x.getName(1) + " + " + y.getName(1) + ");\n" +
-                lhs.getName(2) + " <= (" + x.getName(2) + " + " + y.getName(2) + ");"
-              case HDLSub(x: HDLCTypeReg[ComplexNumber], y: HDLCTypeReg[ComplexNumber]) =>
-                lhs.getName(1) + " <= (" + x.getName(1) + " - " + y.getName(1) + ");\n" +
-                lhs.getName(2) + " <= (" + x.getName(2) + " - " + y.getName(2) + ");"
-              case HDLMul(x: HDLCTypeReg[ComplexNumber], y: HDLCTypeReg[ComplexNumber]) =>
-                lhs.getName(1) + " <= (" + x.getName(1) + " * " + y.getName(1) + " - " + x.getName(2) + " * " + y.getName(2) +");\n" +
-                lhs.getName(2) + " <= (" + x.getName(2) + " * " + y.getName(1) + " + " + x.getName(1) + " * " + y.getName(2) +");"
-            }
-          case (_, HDLValueListElem(lst, idx)) =>
+        rhs match {
+          case HDLValueListElem(lst, idx) =>
             val l = lst.lst
             val s = l.indices.map(i =>
               List(i, ": ", compile(lhs),
@@ -1020,15 +888,8 @@ object HDLBase {
 
     protected def moduleDeclaration(m: HDLModule, content: String): String = {
       val paramNames = m.params.map(_.getName)
-      var cparamNames = m.cparams.map(_.getAllName)
-      var allParamNames = paramNames
-      while (cparamNames.nonEmpty) {
-        allParamNames = allParamNames ++ cparamNames.head
-        cparamNames = cparamNames.tail
-      }
-
       List("module ", m.name,
-        "(\n", allParamNames.mkString(",\n"), "\n);\n\n",
+        "(\n", paramNames.mkString(",\n"), "\n);\n\n",
         content, "\nendmodule\n").mkString("")
     }
 
@@ -1038,12 +899,6 @@ object HDLBase {
         (if (p.out) "output " else "input ")
           + p.signedString + p.lengthString + p.getName +
           ";\n").sorted.mkString("") +
-      m.cparams.map((p) =>
-          (if (p.out) "output " else "input ") +
-          p.signedString(0) + p.lengthString(0) + p.getName(1) + ";\n" +
-          (if (p.out) "output " else "input ") +
-          p.signedString(1) + p.lengthString(1) + p.getName(2) + ";\n"
-      ).sorted.mkString("") +
       regs.map(p => "reg " +
         p.signedString + p.lengthString +
         p.getName + p.sizeString + ";\n").sorted.mkString("") +
@@ -1073,6 +928,86 @@ object HDLBase {
       moduleDeclaration(m,
         registerDeclaration(m) + refExternalModule(m.externalModule) + "\n" +
         (for (block <- m.blocks) yield compile(block)).mkString("\n"))
+    }
+    //For Debugging
+    def compileDebug : String =
+      (for (module <- toCompile) yield compileDebug(module)).mkString("")
+    def compileDebug(m:HDLModule): String = {
+      val l = interface.length
+      val s = "module " + "debugController" +"(\n" +
+        "clk,\n" +
+        "rst,\n" +
+        "addr,\n" +
+        "read,\n"+
+        "write,\n" +
+        "write_data,\n" +
+        "read_data\n" +
+        ");\n" +
+        "input clk;\n" +
+        "input rst;\n" +
+        "input [4:0] addr;\n" +
+        "input read;\n" +
+        "input [31:0] write_data;\n" +
+        "output reg [31:0] read_data;\n" +
+        "reg [31:0] buffer [31:0];\n" +
+        "wire [31:0] dout;\n" +
+        "wire ready;\n" +
+        "\n" +
+        "always @(clk) begin\n" +
+        "if (write && addr < " + (l - 2).toString + ") begin\n" +
+        "buffer[addr] <= write_data;\n" +
+        "end\n" +
+        "read_data <= buffer[addr];\n" +
+        "buffer[" + (l-2).toString + "] <= dout;\n" +
+        "buffer[" + (l-1).toString + "] <= ready;\n" +
+        "end\n" +
+        m.name + " ins(" + (for (i <- 0 until l-2) yield ("buffer["+i+"]")).mkString(",") + ",dout,ready);\n" +
+        "endmodule"
+
+      s
+    }
+    //For Invoking
+    def compileInvoke : String =
+      (for (module <- toCompile) yield compileInvoke(module)).mkString("")
+    def compileInvoke(m:HDLModule): String = {
+      val l = interface.length
+      val s = "module " + "invokeController" +"(\n" +
+        "clk,\n" +
+        "rst,\n" +
+        "addr,\n" +
+        "read,\n"+
+        "write,\n" +
+        "write_data,\n" +
+        "clkin,\n" +
+        "read_data\n" +
+        ");\n" +
+        "input clk;\n" +
+        "input rst;\n" +
+        "input [4:0] addr;\n" +
+        "input read;\n" +
+        "input [31:0] write_data;\n" +
+        "input clkin;\n"
+        "output reg [31:0] read_data;\n" +
+        "reg [31:0] buffer [31:0];\n" +
+        "wire [31:0] dout;\n" +
+        "wire ready;\n" +
+        "\n" +
+        "always @(clk) begin\n" +
+        "if (write && addr < " + (l - 2).toString + ") begin\n" +
+        "buffer[addr] <= write_data;\n" +
+        "end\n" +
+        "read_data <= buffer[addr];\n" +
+        "buffer[" + (l-2).toString + "] <= dout;\n" +
+        "buffer[" + (l-1).toString + "] <= ready;\n" +
+        "end\n" +
+        m.name + " ins(" + "clkin," + (for (i <- 1 until l-2) yield ("buffer["+i+"]")).mkString(",") + ",dout,ready);\n" +
+        "endmodule"
+
+      s
+    }
+    //Config File
+    def compileConfig : String = {
+      (for ((a,b) <- interface) yield (a.toString + "," + b.toString)).mkString("\n")
     }
   }
 

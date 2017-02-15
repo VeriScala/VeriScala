@@ -14,11 +14,9 @@ module dff32 (d,clk,clrn,q);
       end
 endmodule
  */
-
 package Mips
 
 import NewHDL.Core.HDLBase._
-
 
 class Dff32 (d:HDL[Unsigned],clk:HDL[Boolean],
               clrn:HDL[Boolean],q:HDL[Unsigned]) extends HDLClass {
@@ -42,6 +40,6 @@ class Dff32 (d:HDL[Unsigned],clk:HDL[Boolean],
 
 object Main{
   def main(args: Array[String]): Unit ={
-    new Dff32(Unsigned(0,32),b0,b0,Unsigned(0,32)).compile.toConsole
+    println(new Dff32(Unsigned(0,32),b0,b0,Unsigned(0,32)).compile)
   }
 }

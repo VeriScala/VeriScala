@@ -19,6 +19,6 @@ class Xor[T](clk: HDL[Boolean], rst: HDL[Boolean],
 
 object Main {
   def main(args: Array[String]) {
-    new Xor(false, false, false, false, false).compile.toConsole
+    println(new Xor(false, false, false, false, false).compile)
   }
 }

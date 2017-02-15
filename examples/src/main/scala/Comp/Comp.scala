@@ -25,7 +25,7 @@ class Comparator(clk: HDL[Boolean], rst: HDL[Boolean],
 
 object Main {
   def main(args: Array[String]) {
-    new Comparator(b0, b0,
-      Signed(0, 5), Signed(0, 5), Signed(0, 2)).compile.toConsole
+    println(new Comparator(b0, b0,
+      Signed(0, 5), Signed(0, 5), Signed(0, 2)).compile)
   }
 }

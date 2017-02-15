@@ -33,7 +33,7 @@ object Main {
     val handle_FIFO = new FIFO(false, false,
       Unsigned(0, width), Unsigned(0, width),
       width, depth, Unsigned(0, width))
-    handle_FIFO.compile.toConsole
+    println(handle_FIFO.compile)
   }
 
 }

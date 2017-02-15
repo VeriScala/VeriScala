@@ -23,6 +23,6 @@ class AddSub[T <: Arithable](clk: HDL[Boolean], rst: HDL[Boolean],
 object Main {
   def main(args: Array[String]) {
     val handle_addsub = new AddSub(false, false, Signed(0, 5), Signed(1, 5), Signed(0, 6), Signed(0, 6))
-    handle_addsub.compile.toConsole
+    println(handle_addsub.compile)
   }
 }

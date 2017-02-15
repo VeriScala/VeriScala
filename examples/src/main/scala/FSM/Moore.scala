@@ -92,9 +92,9 @@ class Moore(clk: HDL[Boolean], rst: HDL[Boolean],
 
 object Main {
   def main(args: Array[String]) {
-    new Moore(false, false,
+    println(new Moore(false, false,
       false, false, false,
       false, false, false,
-      2).compile.toConsole
+      2).compile)
   }
 }

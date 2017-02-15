@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="ivy-report.xsl"?>
+<ivy-report version="1.0">
+	<info
+		organisation="default"
+		module="scalahdl_fourth_stage-build"
+		revision="0.1-SNAPSHOT"
+		extra-scalaVersion="2.10"
+		extra-sbtVersion="0.13"
+		conf="compile"
+		confs="compile, runtime, test, provided, optional, compile-internal, runtime-internal, test-internal, plugin, sources, docs, pom, scala-tool"
+		date="20170115194906"/>
+	<dependencies>
+		<module organisation="org.ensime" name="ensime-sbt-cmd">
+			<revision name="0.1.2" status="release" pubdate="20130927092829" resolver="sbt-chain" artresolver="sbt-chain" homepage="http://github.com/aemoncannon/ensime-sbt-cmd" extra-scalaVersion="2.10" extra-sbtVersion="0.13" downloaded="false" searched="false" default="false" conf="default, compile, runtime, default(compile), master" position="0">
+				<license name="BSD-style" url="http://www.opensource.org/licenses/bsd-license.php"/>
+				<metadata-artifact status="no" details="" size="3010" time="0" location="C:\Users\焰强\.ivy2\cache\scala_2.10\sbt_0.13\org.ensime\ensime-sbt-cmd\ivy-0.1.2.xml" searched="false" origin-is-local="false" origin-location="http://maven.oschina.net/content/groups/public/org/ensime/ensime-sbt-cmd_2.10_0.13/0.1.2/ensime-sbt-cmd-0.1.2.pom"/>
+				<caller organisation="default" name="scalahdl_fourth_stage-build" conf="compile" rev="0.1.2" rev-constraint-default="0.1.2" rev-constraint-dynamic="0.1.2" callerrev="0.1-SNAPSHOT" extra-scalaVersion="2.10" extra-sbtVersion="0.13"/>
+				<artifacts>
+					<artifact name="ensime-sbt-cmd" type="jar" ext="jar" status="no" details="" size="135669" time="0" location="C:\Users\焰强\.ivy2\cache\scala_2.10\sbt_0.13\org.ensime\ensime-sbt-cmd\jars\ensime-sbt-cmd-0.1.2.jar">
+						<origin-location is-local="false" location="http://maven.oschina.net/content/groups/public/org/ensime/ensime-sbt-cmd_2.10_0.13/0.1.2/ensime-sbt-cmd-0.1.2.jar"/>
+					</artifact>
+				</artifacts>
+			</revision>
+		</module>
+	</dependencies>
+</ivy-report>

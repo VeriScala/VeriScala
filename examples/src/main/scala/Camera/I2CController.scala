@@ -197,6 +197,6 @@ class I2CController(CLOCK:HDL[Boolean],I2C_SCLK:HDL[Boolean],I2C_SDAT:HDL[Boolea
 
 object Main{
   def main(args: Array[String]): Unit ={
-    new I2CController(b0,b0,b0,Unsigned(0,32),b0,b0,b0,b0).compile.toConsole
+    println(new I2CController(b0,b0,b0,Unsigned(0,32),b0,b0,b0,b0).compile)
   }
 }
