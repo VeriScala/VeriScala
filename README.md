@@ -36,9 +36,9 @@ There are mainly two directory in the project
 `newhdl` provides the core implementation of the DSL
 
 `VeriScala/newhdl/src/main/scala/` holds
-* Core
-* Exceptions
-* Simulation
+* `Core`
+* `Exceptions`
+* `Simulation`
 
 The relation amomg the files in these three directories is show in the figure below
 ![](http://pic3.178.com/3857/38579363/month_1702/70704dce2122da8425363cfe40a618f1.jpg "VeriScala DSL Architecture")
