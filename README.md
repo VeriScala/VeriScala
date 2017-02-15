@@ -20,7 +20,7 @@ their hardware designs in Scala, generate Verilog code automatically and debug a
 interactively in real FPGA environment. 
 
 Detail explanation is in the [paper](https://github.com/VeriScala/VeriScala/blob/master/VeriScala_Intro.pdf)
-___
+
 
 ### File Organization
 ___
@@ -41,14 +41,14 @@ There are mainly two directory in the project
 * Simulation
 
 The relation amomg the files in these three directories is show in the figure below
-![](http://pic3.178.com/3857/38579363/month_1702/85ec70c663fda218a129a35026f83fc2.jpg "VeriScala DSL Architecture")
+![](http://pic3.178.com/3857/38579363/month_1702/70704dce2122da8425363cfe40a618f1.jpg "VeriScala DSL Architecture")
 
 `VeriScala/examples/src/main/` gives part of the demo implementations
 
 `VeriScala/examples/src/test/scala/` gives software test bench of the demo implementations
 
 `VeriScala/examples/compile_result/` gives generation results of the demo implementations
-___
+
 
 ### Usability Test
 
@@ -90,6 +90,6 @@ serves as a good warm-up. Final discovery is demonstrated
 by Figure 9. This figure shows that Scala programmer will
 have advantages in learning VeriScala for they use less time
 both in total and VeriScala, which is a reasonable result.
-___
+
 
 
