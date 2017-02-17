@@ -1,4 +1,4 @@
-package NewHDLExample.Inherit.Child
+/*package NewHDLExample.Inherit.Child
 
 import NewHDL.Core.HDLBase._
 import NewHDLExample.Inherit.Parent.Parent
@@ -25,4 +25,4 @@ object Main {
       Signed(0, 5), Signed(1, 5), Signed(0, 6), Signed(0, 6))
     handle_Adder.compile.toConsole
   }
-}
+}*/
