@@ -1,6 +1,5 @@
 # VeriScala
 
-[![Build Status](https://travis-ci.org/ScalaHDL/VeriScala.svg?branch=master)](https://travis-ci.org/ScalaHDL/VeriScala)
 
 ### Introduction
 ___
