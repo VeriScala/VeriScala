@@ -1,0 +1,7 @@
+VeriScala implementations and tests are provided.
+Two files are included.
+========================================================
+./main                           Source code of the implementations.
+./test                           Corresponding testbench and test class.
+
+

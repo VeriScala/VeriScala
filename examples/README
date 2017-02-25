@@ -1,0 +1,7 @@
+Some examples implemented in VeriScala DSL are given.
+Two files are included.
+========================================================
+./src                                 Source code of the implementations and tests.
+./compile_result                      Automatically generated Verilog code.
+
+

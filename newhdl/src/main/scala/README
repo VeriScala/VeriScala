@@ -1,0 +1,8 @@
+VeriScala DSL is a lightweight Scala library, core parts of the implementations are included in 
+this directory. 
+========================================================
+./Core                                 Core implementations of the DSL.
+./Exceptions                           Exception handles.
+./Simulation	                       Simulation utilities for software emulation and testing.
+
+

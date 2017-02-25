@@ -1,0 +1,6 @@
+Core implementation of the VeriScala DSL
+========================================================
+./main                                Source code of the implementations.
+./test                                Some tests.
+
+
