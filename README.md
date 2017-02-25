@@ -90,5 +90,7 @@ by Figure 9. This figure shows that Scala programmer will
 have advantages in learning VeriScala for they use less time
 both in total and VeriScala, which is a reasonable result.
 
+### Applications
 
+___
 
