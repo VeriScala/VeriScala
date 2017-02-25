@@ -94,6 +94,6 @@ both in total and VeriScala, which is a reasonable result.
 
 ___
 ##### MIPS CPU
-![](http://202.120.58.76/8/fd/fd1152e6d0866bb77efc6f0e073e150b84bd64f0/cpu.bmp?key=31a97dbdef62b1c1b2d7e2b28d00a12f2e660b5f&file=cpu.bmp "MIPS CPU")
+![](http://wl.ibox.sjtu.edu.cn/w/BrXx01N0Fi1NU19l/cpu.jpg "MIPS CPU")
 
 
