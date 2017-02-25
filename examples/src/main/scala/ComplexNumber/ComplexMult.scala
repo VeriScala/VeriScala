@@ -1,4 +1,4 @@
-package NewHDLExample.ComplexNumber.Mult
+/*package NewHDLExample.ComplexNumber.Mult
 
 import NewHDL.Core.HDLBase._
 
@@ -19,4 +19,4 @@ object Main {
       ComplexNumber(0, 5, 0, 5), ComplexNumber(1, 5, 2, 5), ComplexNumber(0, 6, 0, 6))
     handle_Mult.compile.toConsole
   }
-}
+}*/
