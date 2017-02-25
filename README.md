@@ -93,7 +93,44 @@ both in total and VeriScala, which is a reasonable result.
 ### Applications
 
 ___
-##### MIPS CPU
+#### MIPS CPU
+
+`VeriScala/examples/src/main/scala/Mips/`  
+
+For a real world application, we implement
+a full feature system, a five-stage single cycle CPU supporting
+MIPS instruction set. To validate the generated code, we
+run the same test bench for both variants on Modelsim, and
+additionally we build support to I/O with FPGA board along
+with a simple subtractor based on it to see if the system runs
+well on real hardware. This substractor is implemented by
+MIPS assembly code and interacts via the on-board interface,
+where switches are used to control each bit of input data and
+the 7-segment displays show the operators and result. It turns
+out that the automatically generated CPU works well both on
+simulator and hardware, for it has the same behavior as the
+manually written one.
+
 ![](http://thumbnail0.baidupcs.com/thumbnail/1a402171640554894d177b1de9adf9d1?fid=4026778128-250528-1071927127310639&time=1488020400&rt=sh&sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-6pJZKB4L4OfNt0c1cpP69lgHKlo%3D&expires=8h&chkv=0&chkbd=0&chkpc=&dp-logid=1294862493294295364&dp-callid=0&size=c710_u400&quality=100 "MIPS CPU")
+
+#### Video Transcoder
+
+`VeriScala/examples/src/main/scala/Camera/`  
+
+The Verilog design of the video transcoder is an example
+from the CD that comes along with the SoC-DE1 board.
+We implement the VeriScala variant based on this code.
+However, many encrypted IP cores are introduced and there
+is no corresponding implementation in current VeriScala
+libraries, which results in that we have to manually write
+some module instantiation statement in generated code.
+Figure below demonstrates how this system looks like. It uses
+a TRDB-D5M camera to capture raw data, then after
+transcoding and buffering, it displays the pictures via a
+VGA bus on the screen. 
+
+![](http://thumbnail0.baidupcs.com/thumbnail/bb540114c83edc22a2a54a4d1852d9bc?fid=4026778128-250528-345861407445818&time=1488024000&rt=sh&sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-mCjJ%2FnH%2BTMQu9jenWMhyBKfthCI%3D&expires=8h&chkv=0&chkbd=0&chkpc=&dp-logid=1295061466809502555&dp-callid=0&size=c710_u400&quality=100
+"Camera")
+
 
 
